@@ -1,0 +1,20 @@
+= Collect singing stream timestamps on YouTube
+
+
+== For develop
+
+Setup jupyter::
+
+Run.
+[source, fish]
+----
+$ . env.fish
+$ jupyter lab
+----
+
+Edit like below.
+
+.jupyter/data/kernels/ruby/kernel.json
+----
+{"argv":["bundle", "exec", "iruby","kernel","{connection_file}"],"display_name":"Ruby 3.0.2","language":"ruby"}
+----
