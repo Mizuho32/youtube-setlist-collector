@@ -15,11 +15,12 @@ $symbol_reg = /[!@#\$%\^&\*\(\)_\+-=\[\]\{\};':"\\,\|\.<>\/\?]/
 
 $time_reg = /(?:\d+:)+\d+/
 $line_reg = /[^\n]+#{$time_reg}[^\n]+(?:\n(?!.+#{$time_reg}.+)[^\n]+)*/
-$list_reg = /(?:#{$line_reg}(?:\n)?){2,}/ # TODO: 1行飛ばしタイプ
+$list_reg = /(?:#{$line_reg}(?:\n){1,2}){2,}/
 
 def get_setlist(text_original, song_db, select_thres = 0.5)
-  reg = $list_reg
-  m = text_original.match(reg)
+  m = text_original.match($list_reg)
+  return text_original if m.nil?
+
   tmp_setlist = m[0]
     .strip.scan($line_reg)
     .map{|el| 
