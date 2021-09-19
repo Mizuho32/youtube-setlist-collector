@@ -15,7 +15,10 @@ $symbol_reg = /[!@#\$%\^&\*\(\)_\+-=\[\]\{\};':"\\,\|\.<>\/\?]/
 
 $time_reg = /(?:\d+:)+\d+/
 $line_reg = /[^\n]+#{$time_reg}[^\n]+(?:\n(?!.+#{$time_reg}.+)[^\n]+)*/
-$list_reg = /(?:#{$line_reg}(?:\n){1,2}){2,}/
+$list_reg = /(?:#{$line_reg}(?:\n){0,2}){2,}/ # TODO: auto detect num of LF
+
+$line_ignore_reg = /start|スタート/i
+$ignore_reg = /^\s*\d+\.?/
 
 def get_setlist(text_original, song_db, select_thres = 0.5)
   m = text_original.match($list_reg)
@@ -23,19 +26,21 @@ def get_setlist(text_original, song_db, select_thres = 0.5)
 
   tmp_setlist = m[0]
     .strip.scan($line_reg)
+    .select{|el| not el.match($line_ignore_reg) }
     .map{|el| 
       time = el.scan($time_reg)
-      m = el.match(/^(.*)#{$time_reg}(.*)$/)
-      body =  m[1].size > m[2].size ? m[1] : m[2]
+      m = el.sub($time_reg, "")
+            .sub($ignore_reg, "")
+            .match(/^(.*)$/)
+      body =  m[1]
       { time: time,
         lines: lines=body.split("\n").map{|line| line.strip}
       }
     }
 
   splitters = get_split_symbols(tmp_setlist, select_thres).join("|")
-  tmp_setlist.each{|el|
-    el[:splitted] = el[:lines].first.split(/(?:#{splitters})/)
-  }
+  tmp_setlist.select!{|el| el[:lines].first.match(/(?:#{splitters})/) }
+  tmp_setlist.each{|el| el[:splitted] = el[:lines].first.split(/(?:#{splitters})/) }
   indices = indices_of_songinfo(song_db, tmp_setlist)
   tmp_setlist.each{|line| line[:body] =  splitted2songinfo(line[:splitted], indices) }
 end
@@ -50,18 +55,22 @@ end
 
 def indices_of_songinfo(song_db, tmp_setlist, sample_rate: 0.5, max_sample: 50)
   len = (tmp_setlist.size*sample_rate).to_i
-  len = max_sample if len > max_sample
+  len = [tmp_setlist.size, max_sample].min if len > max_sample
 
+  # search indices in song_db
   info_indices = tmp_setlist[0...len].inject({}){|h, el|
     el[:splitted].each_with_index do |info, i|
       song_db.each{|info_type, db| 
-        idx = db.index(info)
+        idx = db.index(info.downcase)
         h[info_type] = (h[info_type] or []) << i if not idx.nil?
         #h[:splitted] = el[:splitted]
       }
     end
     h
   }
+  #p "info", info_indices
+
+  # calc statistics
   info_indices.map{|info_type, idx| 
     idx_distri = idx
       .group_by(&:itself)
