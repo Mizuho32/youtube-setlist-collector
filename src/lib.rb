@@ -1,6 +1,11 @@
 # coding: utf-8
 
+require 'csv'
+require 'pp'
+
 require 'nkf'
+
+require_relative "youtube_utils"
 
 
 def item2text_orig(item)
@@ -22,27 +27,35 @@ $ignore_reg = /^\s*\d+\.?/
 
 def get_setlist(text_original, song_db, select_thres = 0.5)
   m = text_original.match($list_reg)
-  return text_original if m.nil?
+  return {}, text_original if m.nil?
 
   tmp_setlist = m[0]
     .strip.scan($line_reg)
     .select{|el| not el.match($line_ignore_reg) }
-    .map{|el| 
+    .map{|el|
       time = el.scan($time_reg)
       m = el.sub($time_reg, "")
-            .sub($ignore_reg, "")
-            .match(/^(.*)$/)
+        .sub($ignore_reg, "")
+        .strip # 1st row is only time stamp
+        #.tap{|el| p el}
+        .match(/^(.*)$/)
       body =  m[1]
       { time: time,
         lines: lines=body.split("\n").map{|line| line.strip}
       }
     }
 
+  # find splitter and split body by splitter
   splitters = get_split_symbols(tmp_setlist, select_thres).join("|")
   tmp_setlist.select!{|el| el[:lines].first.match(/(?:#{splitters})/) }
   tmp_setlist.each{|el| el[:splitted] = el[:lines].first.split(/(?:#{splitters})/) }
   indices = indices_of_songinfo(song_db, tmp_setlist)
-  tmp_setlist.each{|line| line[:body] =  splitted2songinfo(line[:splitted], indices) }
+  setlist = tmp_setlist.each{|line| line[:body] =  splitted2songinfo(line[:splitted], indices) }
+  return setlist, text_original
+rescue NoMethodError => ex
+  puts "FAILED while processing:","---", text_original
+  pp tmp_setlist
+  raise ex
 end
 
 def get_split_symbols(tmp_setlist, select_thres)
@@ -60,7 +73,7 @@ def indices_of_songinfo(song_db, tmp_setlist, sample_rate: 0.5, max_sample: 50)
   # search indices in song_db
   info_indices = tmp_setlist[0...len].inject({}){|h, el|
     el[:splitted].each_with_index do |info, i|
-      song_db.each{|info_type, db| 
+      song_db.each{|info_type, db|
         idx = db.index(info.downcase)
         h[info_type] = (h[info_type] or []) << i if not idx.nil?
         #h[:splitted] = el[:splitted]
@@ -71,7 +84,7 @@ def indices_of_songinfo(song_db, tmp_setlist, sample_rate: 0.5, max_sample: 50)
   #p "info", info_indices
 
   # calc statistics
-  info_indices.map{|info_type, idx| 
+  info_indices.map{|info_type, idx|
     idx_distri = idx
       .group_by(&:itself)
       .map{|idx, amount| [idx, amount.size]}
@@ -126,12 +139,44 @@ end
 
 def video2setlist(youtube, song_db, videoId: "", maxResults: 20, response: nil)
   looks_str_setlists = video2looks_setlists(youtube, videoId: videoId, maxResults: maxResults, response: response)
-  
+
   set_list = []
   looks_str_setlists.each{|el, text_original|
-    set_list = get_setlist(text_original, song_db)
-    break if not set_list.empty?
+    set_list, text_original = get_setlist(text_original, song_db)
+    break if not set_list.empty? and not set_list.is_a? String
   }
 
-  return set_list
+  return set_list, text_original
+end
+
+$singing_streams = /歌枠|singing\s+stream/i
+def channel2setlists(youtube, channel_url, song_db, singing_streams://, title_match:nil, id_match:nil)
+  singing_streams = /#{singing_streams}|#{$singing_streams}/
+  channel_id = YTU.url2channel_id(channel_url)
+  data_dir = Pathname(YTU::DATA_DIR)
+
+  # select singing streams
+  csv_format = YTU::UPLOADS_CSV_FORMAT
+  uploads = CSV.read(data_dir / channel_id / YTU::UPLOADS_CSV)
+    .select{|line|
+      title = line[csv_format[:title]]
+      id = line[csv_format[:id]]
+      title.match(singing_streams) and (
+        (! title_match.nil? and title.match(title_match)) or
+        (! id_match.nil?    and id.match(id_match))          )
+    }
+  puts "SELECTED:", "---", uploads.map{|line| line[csv_format[:title]]}.join("\n")
+
+  streams_dir = data_dir / channel_id / YTU::STREAMS_DIR
+  uploads.each{|line|
+    id = line[csv_format[:id]]
+    title = line[csv_format[:title]]
+    yamlfile_name = streams_dir / "#{id}.yaml"
+    next if Dir.exist?(file_name)
+
+    puts id
+    set_list, text = video2setlist(youtube, song_db, videoId: id)
+    yaml = {title: title, id: id, setlist: set_list, text_original: text}.to_yaml
+    File.write(yamlfile_name, yaml) if not Dir.exist?(yamlfile_name)
+  }
 end
