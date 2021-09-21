@@ -10,6 +10,7 @@ module YTU
   CHANNEL_INFO_YAML = "info.yaml"
   UPLOADS_CSV = "uploads.csv" # title, id, status
   UPLOADS_CSV_FORMAT = %i[title id status].each_with_index.map{|e,i| [e, i]}.to_h
+  FAILS_CSV = "fails.csv"
 
   DATA_DIR = "data"
   CACHE_DIR = "cache"
@@ -44,7 +45,7 @@ module YTU
 
     CSV.open(data_dir / CHANNELS_CSV, "wb") do |csv|
       channels_csv.each{|row| csv << row }
-    end if not Dir.exist?(data_dir / CHANNELS_CSV)
+    end if not File.exist?(data_dir / CHANNELS_CSV)
 
 
     channel_dir = data_dir / channel_id
@@ -52,7 +53,7 @@ module YTU
     FileUtils.mkdir(channel_dir / STREAMS_DIR) if not Dir.exist?(channel_dir / STREAMS_DIR)
     FileUtils.mkdir(channel_dir / CACHE_DIR) if not Dir.exist?(channel_dir / CACHE_DIR)
     FileUtils.mkdir(channel_dir / COMMENT_CACHE_DIR) if not Dir.exist?(channel_dir / COMMENT_CACHE_DIR)
-    File.write(channel_dir / CHANNEL_INFO_YAML, channel.to_yaml) if not Dir.exist?(channel_dir / CHANNEL_INFO_YAML)
+    File.write(channel_dir / CHANNEL_INFO_YAML, channel.to_yaml) if not File.exist?(channel_dir / CHANNEL_INFO_YAML)
 
     get_uploads(youtube, channel_id, channel: channel)
   end
