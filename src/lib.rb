@@ -27,7 +27,7 @@ $line_reg = /[^\n]+#{$time_reg}[^\n]+(?:\n(?!.+#{$time_reg}.+)[^\n]+)*/
 $list_reg = /(?:#{$line_reg}(?:\n){0,2}){2,}/ # TODO: auto detect num of LF
 
 $line_ignore_reg = /start|スタート/i
-$ignore_reg = /^\s*\d+\.?/
+$ignore_reg = /(?:^\s*\d+\.?|　)/
 
 def get_setlist(text_original, song_db, select_thres = 0.5)
   m = text_original.match($list_reg)
@@ -206,7 +206,7 @@ def channel2setlists(youtube, channel_url, song_db, singing_streams:nil, title_m
         (! title_match.nil? and title.match(title_match)) or
         (! id_match.nil?    and id.match(id_match))          )
     }[range]
-  puts "SELECTED:", "---", uploads.map{|line| line[csv_format[:title]]}.join("\n")
+  puts "SELECTED:", "---", uploads.map{|line| "#{line[csv_format[:title]]} (#{line[csv_format[:id]]})" }.join("\n")
 
   # make setlists
   streams_dir = data_dir / channel_id / YTU::STREAMS_DIR
