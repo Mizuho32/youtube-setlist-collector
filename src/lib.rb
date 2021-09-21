@@ -51,7 +51,7 @@ def get_setlist(text_original, song_db, select_thres = 0.5)
 
   # find splitter and split body by splitter
   splitters = get_split_symbols(tmp_setlist, select_thres)
-  splt_reg = /(?:#{ splitters.map{|e| Regexp.escape(e)}.join("|") })/
+  splt_reg = splitters.empty? ? /$/ : /(?:#{ splitters.map{|e| Regexp.escape(e)}.join("|") })/
   tmp_setlist.select!{|el| el[:lines].first.match(splt_reg) }
   tmp_setlist.each{|el|
     el[:splitted] = el[:lines]
@@ -104,8 +104,8 @@ def indices_of_songinfo(song_db, tmp_setlist, sample_rate: 0.5, max_sample: 50)
 end
 
 def splitted2songinfo(splitted, indices, song_db)
-  song_name_idx = indices[:song_name]&.first or splitted.size
-  artist_idx    = indices[:artist]&.first or splitted.size
+  song_name_idx = indices[:song_name]&.first || splitted.size
+  artist_idx    = indices[:artist]&.first || splitted.size
   song_name = splitted[song_name_idx]
   artist    = splitted[artist_idx]
 
@@ -130,11 +130,17 @@ def splitted2songinfo(splitted, indices, song_db)
     end
   end
 
-  if artist.nil? and splitted.size != 1
-    artist = if song_name_idx < artist_idx then
-      splitted.last
+  if artist.nil?
+    if splitted.size != 1
+      artist = if song_name_idx < artist_idx then
+        splitted.last
+      else
+        splitted.first
+      end
     else
-      splitted.first
+      if idx = song_db[:song_name].index(song_name) then
+        artist = song_db[:artist][idx]
+      end
     end
   end
 
