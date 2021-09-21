@@ -20,7 +20,7 @@ def preprocess(text_original)
   NKF::nkf("-wZ0", text_original.gsub(/\R/, "\n"))
 end
 
-$symbol_reg = /[!@#\$%\^&\*\(\)_\+-=\[\]\{\};':"\\,\|\.<>\/\?]/
+$symbol_reg = /[#{ Regexp.escape(%Q<!@#$%^&*()_+-=[]{};':"\\,|.<>/?>) }]/
 
 $time_reg = /(?:\d+:)+\d+/
 $line_reg = /[^\n]+#{$time_reg}[^\n]+(?:\n(?!.+#{$time_reg}.+)[^\n]+)*/
@@ -60,7 +60,7 @@ def get_setlist(text_original, song_db, select_thres = 0.5)
   }
   # map song_name and artist
   indices = indices_of_songinfo(song_db, tmp_setlist)
-  setlist = tmp_setlist.each{|line| line[:body] =  splitted2songinfo(line[:splitted], indices) }
+  setlist = tmp_setlist.each{|line| line[:body] =  splitted2songinfo(line[:splitted], indices, song_db) }
   return setlist, text_original, splitters
 rescue StandardError => ex
   puts "FAILED while parsing:","---", text_original
@@ -71,7 +71,7 @@ end
 def get_split_symbols(tmp_setlist, select_thres)
   lines = tmp_setlist.map{|el| el[:lines][0]}
   symbol_group = lines
-    .map{|line| line.scan(/(?:\s|#{$symbol_reg})+/).uniq }
+    .map{|line| line.scan(/(?!\s+[a-z])(?:\s|#{$symbol_reg})+/i).uniq }
     .flatten.group_by{|k,v| k}
   symbol_group.select{|k,v| v.size/lines.size.to_f > select_thres}.keys
 end
@@ -103,17 +103,30 @@ def indices_of_songinfo(song_db, tmp_setlist, sample_rate: 0.5, max_sample: 50)
   }.to_h
 end
 
-def splitted2songinfo(splitted, indices)
-  song_name_idx = indices[:song_name].first
-  artist_idx    = indices[:artist]&.first
-  song_name = splitted[song_name_idx] rescue nil
-  artist    = splitted[artist_idx] rescue nil
+def splitted2songinfo(splitted, indices, song_db)
+  song_name_idx = indices[:song_name]&.first or splitted.size
+  artist_idx    = indices[:artist]&.first or splitted.size
+  song_name = splitted[song_name_idx]
+  artist    = splitted[artist_idx]
 
-  if song_name.nil?
-    song_name = if song_name_idx < artist_idx then
-      splitted.first
+  if song_name.nil? then
+    _splitted = splitted.reject{|n| n==artist}
+    if song_name_idx >= _splitted.size # invalid song_name index
+      if _splitted.size==1
+        song_name = _splitted.first
+      else
+        if not (searched = _splitted.select{|itm| song_db[:song_name].index(itm)}).empty?
+          song_name = searched.first
+        else
+          song_name = _splitted.first
+        end
+      end
     else
-      splitted.last
+      song_name = if song_name_idx < artist_idx then
+        _splitted.first
+      else
+        _splitted.last
+      end
     end
   end
 
@@ -124,6 +137,7 @@ def splitted2songinfo(splitted, indices)
       splitted.first
     end
   end
+
 
   return {song_name: song_name.to_s, artist: artist.to_s}
 end
@@ -170,7 +184,7 @@ def video2setlist(youtube, song_db, videoId: "", maxResults: 20, response: nil)
 end
 
 $singing_streams = /歌枠|singing\s+stream/i
-def channel2setlists(youtube, channel_url, song_db, singing_streams:nil, title_match:nil, id_match:nil, range:0..-1)
+def channel2setlists(youtube, channel_url, song_db, singing_streams:nil, title_match:nil, id_match:nil, range:0..-1, force: false)
   singing_streams = singing_streams.nil? ? $singing_streams : /#{singing_streams}|#{$singing_streams}/
   channel_id = YTU.url2channel_id(channel_url)
   data_dir = Pathname(YTU::DATA_DIR)
@@ -195,7 +209,7 @@ def channel2setlists(youtube, channel_url, song_db, singing_streams:nil, title_m
     id = line[csv_format[:id]]
     title = line[csv_format[:title]]
     yamlfile_name = streams_dir / "#{id}.yaml"
-    next if File.exist?(yamlfile_name)
+    next if File.exist?(yamlfile_name) and not force
 
     comment_cache = channel_dir / YTU::COMMENT_CACHE_DIR / "#{id}.yaml"
     cache = File.exist?(comment_cache) ? YAML.load_file(comment_cache) : {}
@@ -204,7 +218,7 @@ def channel2setlists(youtube, channel_url, song_db, singing_streams:nil, title_m
     puts "Analyze #{title}(#{id})..."
     set_list, text, splitters, response = video2setlist(youtube, song_db, videoId: id, response: response)
     yaml = {title: title, id: id, splitters: splitters, setlist: set_list, text_original: text}.to_yaml
-    File.write(yamlfile_name, yaml) if not File.exist?(yamlfile_name)
+    File.write(yamlfile_name, yaml) if not File.exist?(yamlfile_name) or force
 
   rescue Types::SetlistParseError => ex
     File.write(comment_cache, {errmsg: ex.ex.message+"\n"+ex.ex.backtrace.join("\n"), response: ex.response, tmp_setlist: ex.tmp_setlist, text_original: ex.text_original}.to_yaml)
