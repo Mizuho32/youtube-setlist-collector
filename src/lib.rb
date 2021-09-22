@@ -4,6 +4,7 @@ require 'csv'
 require 'pp'
 
 require 'nkf'
+require 'moji'
 
 require_relative "youtube_utils"
 require_relative "types"
@@ -21,7 +22,8 @@ def preprocess(text_original)
 end
 
 $setlist_reg = /(?:set|songs?|セッ?ト|曲).*(?:list|リ(スト)?)/i
-$symbol_reg = /[#{ Regexp.escape(%Q<!@#$%^&*()_+-=[]{};':"\\,|.<>/?>) }]/
+$symbol = %Q<!@#$%^&*()_+-=[]{};':"\\,|.<>/?〜>
+$symbol_reg = /[#{Regexp.escape($symbol)}]/
 
 $time_reg = /(?:\d+:)+\d+/
 $line_reg = /[^\n]+#{$time_reg}[^\n]+(?:\n(?!.+#{$time_reg}.+)[^\n]+)*/
@@ -83,6 +85,15 @@ def get_split_symbols(tmp_setlist, select_thres)
   symbol_group = lines
     .map{|line| line.scan(/(?!\s+[a-z])(?:\s|#{$symbol_reg})+/i).uniq }
     .flatten.group_by{|k,v| k}
+
+  if symbol_group.empty? then # Zenkaku symbols
+    symbol_group = lines
+      .map{|line|
+        # Zenkaku symbol substrings
+        line.each_char.chunk{|char| Moji.type?(char, Moji::ZEN_SYMBOL)}.select{|is_symbol, chars| is_symbol}.map{|_, chars| chars.join}.uniq
+      }.flatten.group_by{|k,v| k}
+  end
+
   symbol_group.select{|k,v| v.size/lines.size.to_f > select_thres}.keys
 end
 
