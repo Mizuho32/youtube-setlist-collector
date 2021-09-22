@@ -23,7 +23,7 @@ end
 
 $setlist_reg = /(?:set|songs?|セッ?ト|曲).*(?:list|リ(スト)?)/i
 $symbol = %Q<!@#$%^&*()_+-=[]{};':"\\,|.<>/?〜>
-$symbol_reg = /[#{Regexp.escape($symbol)}]|#{Moji.regexp(Moji::ZEN_SYMBOL)}/
+$symbol_reg = Moji.symbol
 
 $time_reg = /(?:\d+:)+\d+/
 # line that has timestamp in first row, no time stamp nor symbol only line follows
@@ -95,7 +95,15 @@ def get_split_symbols(tmp_setlist, select_thres)
       }.flatten.group_by{|k,v| k}
   end
 
-  symbol_group.select{|k,v| v.size/lines.size.to_f > select_thres}.keys
+  symbol_group_stat = Hash[symbol_group.map{|k,v| [k, v.size.to_f]}]
+  symbol_group_stat.keys.combination(2).each{|k1, k2|
+    if k1.include?(k2) then
+      symbol_group_stat[k2] += symbol_group_stat[k1]
+    elsif k2.include?(k1) then
+      symbol_group_stat[k1] += symbol_group_stat[k2]
+    end
+  }
+  symbol_group_stat.select{|k,n| n/lines.size > select_thres}.keys
 end
 
 def indices_of_songinfo(song_db, tmp_setlist, sample_rate: 0.5, max_sample: 50)
@@ -224,8 +232,8 @@ def channel2setlists(youtube, channel_url, song_db, singing_streams:nil, title_m
       title = line[csv_format[:title]]
       id = line[csv_format[:id]]
       title.match(singing_streams) and (
-        (! title_match.nil? and title.match(title_match)) or
-        (! id_match.nil?    and id.match(id_match))          )
+        (not !title_match.nil? or title.match(title_match)) and # not nil? -> match
+        (not !id_match.nil?    or id.match(id_match))          )
     }[range]
   puts "SELECTED:", "---", uploads.map{|line| "#{line[csv_format[:title]]} (#{line[csv_format[:id]]})" }.join("\n")
 
