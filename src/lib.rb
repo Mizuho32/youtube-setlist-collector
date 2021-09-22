@@ -84,7 +84,7 @@ end
 def get_split_symbols(tmp_setlist, select_thres)
   lines = tmp_setlist.map{|el| el[:lines][0]}
   symbol_group = lines
-    .map{|line| line.scan(/(?!\s+[a-z])(?:\s|#{$symbol_reg})+/i).uniq }
+    .map{|line| line.scan(/(?:(?!\s+[a-z])(?:\s|#{$symbol_reg})+|By)/i).uniq }
     .flatten.group_by{|k,v| k}
 
   if symbol_group.empty? then # Zenkaku symbols
@@ -175,7 +175,7 @@ def splitted2songinfo(splitted, indices, song_db)
   end
 
 
-  return {song_name: song_name.to_s, artist: artist.to_s}
+  return {song_name: song_name.to_s.strip, artist: artist.to_s.strip}
 end
 
 
