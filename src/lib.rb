@@ -23,7 +23,7 @@ end
 
 $setlist_reg = /(?:set|songs?|セッ?ト|曲).*(?:list|リ(スト)?)/i
 $symbol = %Q<!@#$%^&*()_+-=[]{};':"\\,|.<>/?〜>
-$symbol_reg = Moji.symbol
+$symbol_reg = /[#{Regexp.escape($symbol)}]|#{Moji.regexp(Moji::ZEN_SYMBOL)}/
 
 $time_reg = /(?:\d+:)+\d+/
 # line that has timestamp in first row, no time stamp nor symbol only line follows
@@ -61,7 +61,7 @@ def get_setlist(text_original, song_db, select_thres = 0.5)
   # find splitter and split body by splitter
   splitters = get_split_symbols(tmp_setlist, select_thres)
   splt_reg = splitters.map{|e|
-    next "(?:(?<![a-z])#{e}(?![a-z]))" if e =~ /\s+/
+    next "(?:(?<![a-z])#{e}(?![a-z]))" if e =~ /^\s+$/
     Regexp.escape(e)
   }
   splt_reg = splitters.empty? ? /$/ : /(?:#{ splt_reg.join("|") })/
