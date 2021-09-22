@@ -20,6 +20,7 @@ def preprocess(text_original)
   NKF::nkf("-wZ0", text_original.gsub(/\R/, "\n"))
 end
 
+$setlist_reg = /(?:set|songs?|セッ?ト|曲).*(?:list|リ(スト)?)/i
 $symbol_reg = /[#{ Regexp.escape(%Q<!@#$%^&*()_+-=[]{};':"\\,|.<>/?>) }]/
 
 $time_reg = /(?:\d+:)+\d+/
@@ -30,7 +31,12 @@ $line_ignore_reg = /start|スタート/i
 $ignore_reg = /(?:^\s*\d+\.?|　)/
 
 def get_setlist(text_original, song_db, select_thres = 0.5)
-  m = text_original.match($list_reg)
+  m = if $setlist_reg =~ text_original then
+    text_original.split($setlist_reg).last
+  else
+    text_original
+  end.match($list_reg)
+
   return [], text_original, [] if m.nil?
 
   tmp_setlist = m[0]
@@ -51,7 +57,11 @@ def get_setlist(text_original, song_db, select_thres = 0.5)
 
   # find splitter and split body by splitter
   splitters = get_split_symbols(tmp_setlist, select_thres)
-  splt_reg = splitters.empty? ? /$/ : /(?:#{ splitters.map{|e| Regexp.escape(e)}.join("|") })/
+  splt_reg = splitters.map{|e|
+    next "(?:(?<![a-z])#{e}(?![a-z]))" if e =~ /\s+/
+    Regexp.escape(e)
+  }
+  splt_reg = splitters.empty? ? /$/ : /(?:#{ splt_reg.join("|") })/
   tmp_setlist.select!{|el| el[:lines].first.match(splt_reg) }
   tmp_setlist.each{|el|
     el[:splitted] = el[:lines]
@@ -152,7 +162,6 @@ end
 
 
 
-$setlist_reg = /(set|songs?|セッ?ト|曲).*(list|リ(スト)?)/i
 def looks_comment_setlist?(text_original)
   text_original.match($setlist_reg) or text_original.match($list_reg)
 end
