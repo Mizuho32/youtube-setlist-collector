@@ -23,10 +23,11 @@ end
 
 $setlist_reg = /(?:set|songs?|セッ?ト|曲).*(?:list|リ(スト)?)/i
 $symbol = %Q<!@#$%^&*()_+-=[]{};':"\\,|.<>/?〜>
-$symbol_reg = /[#{Regexp.escape($symbol)}]/
+$symbol_reg = /[#{Regexp.escape($symbol)}]|#{Moji.regexp(Moji::ZEN_SYMBOL)}/
 
 $time_reg = /(?:\d+:)+\d+/
-$line_reg = /[^\n]+#{$time_reg}[^\n]+(?:\n(?!.+#{$time_reg}.+)[^\n]+)*/
+# line that has timestamp in first row, no time stamp nor symbol only line follows
+$line_reg = /[^\n]+#{$time_reg}[^\n]+(?:\n(?!(?:.+#{$time_reg}.+|(?:#{$symbol_reg}|[^\n])+))[^\n]+)*/
 $list_reg = /(?:#{$line_reg}(?:\n){0,2}){2,}/ # TODO: auto detect num of LF
 
 $line_ignore_reg = /start|スタート/i
