@@ -64,6 +64,7 @@ GEM
       mime-types-data (~> 3.2015)
     mime-types-data (3.2021.0901)
     mini_mime (1.1.1)
+    moji (1.6)
     multi_json (1.15.0)
     multipart-post (2.1.1)
     native-package-installer (1.1.1)
@@ -98,6 +99,7 @@ DEPENDENCIES
   google-apis-youtube_v3
   googleauth
   iruby
+  moji
   nkf
   pycall
   rake
