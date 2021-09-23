@@ -25,7 +25,7 @@ module YTU
 
   def init_project(youtube, channel_url, data_dir: Pathname(DATA_DIR))
     FileUtils.mkdir(data_dir) if not Dir.exist?(data_dir)
-     
+
     channels_csv = CSV.read(data_dir / CHANNELS_CSV) rescue []
     channel_id = url2channel_id(channel_url)
 
@@ -68,7 +68,8 @@ module YTU
     uploads = CSV.read(channel_dir / UPLOADS_CSV) rescue []
     playlist_id = channel.content_details.related_playlists.uploads
 
-    uploads =
+    puts "#{video_count} videos on the online, #{uploads.size} on the local"
+    delta =
     if uploads.empty? then
       load_uploads(youtube, video_count, playlist_id)
     elsif uploads.size < video_count then
@@ -76,8 +77,11 @@ module YTU
     elsif uploads.size > video_count then
       raise NotImplementedError.new
     else # uploaded == cached
+      puts "Local data is updated. Nothing to do"
       return
-    end + uploads
+    end
+    uploads = delta + uploads
+    puts "Updated Delta (#{delta.size})","----", delta.map{|row| row.join(", ")}.join("\n"), "----"
 
     CSV.open(channel_dir / UPLOADS_CSV, "wb") do |csv|
       uploads.each{|row| csv << row }
@@ -93,9 +97,9 @@ module YTU
       playlist = youtube.list_playlist_items("snippet,contentDetails", playlist_id: playlist_id, page_token: token, max_results: max_result)
       uploads += playlist.items.map{|v| [v.snippet.title, v.content_details.video_id, "public"] }
       token = playlist.next_page_token
-      break if token.nil?
+      break if token.nil? or uploads.size >= count
     end
-    
+
     return uploads
   end
 end
