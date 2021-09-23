@@ -1,5 +1,40 @@
 = Collect singing stream timestamps on YouTube
 
+== Usage
+
+First, prepare your YouTube account's API KEY.
+
+Search channel. When channels use custom url like `youtube.com/c/some_name` that is not id.
+[source, bash]
+----
+$ bundle exec ./setlist.rb --search "KANADE MiMi" -k key.txt
+----
+
+Init.
+[source, bash]
+----
+$ bundle exec ./setlist.rb --init -u "https://www.youtube.com/channel/xxxxxxxxxxxx" -k key.txt
+----
+
+Make setlist. selecting index 0 to 2 videos from "singing streams" which are made from all uploads by matching "歌枠" or "singing stream" words and then match id by `/-R3/`. Force overwrite existings.
+[source, bash]
+----
+$ bundle exec ./setlist.rb --make -u "https://www.youtube.com/channel/xxxxxxxxxxxx" -k key.txt -r "0..2" -i '-R3' -d list.csv -f
+----
+
+`list.csv` is song name and artist list. Order is name, artist.
+[source, bash]
+----
+name,artist
+花に亡霊,ヨルシカ
+...
+----
+
+Update. (init first)
+[source, bash]
+----
+$ bundle exec ./setlist.rb --update -u "https://www.youtube.com/channel/xxxxxxxxxxxx" -k key.txt
+----
 
 == For develop
 
