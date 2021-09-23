@@ -61,7 +61,7 @@ def get_setlist(text_original, song_db, select_thres = 0.5)
   # find splitter and split body by splitter
   splitters = get_split_symbols(tmp_setlist, select_thres)
   splt_reg = splitters.map{|e|
-    next "(?:(?<![a-z])#{e}(?![a-z]))" if e =~ /^\s+$/
+    next "(?:(?<![a-z])#{e}|#{e}(?![a-z]))" if e =~ /^\s+$/
     Regexp.escape(e)
   }
   splt_reg = splitters.empty? ? /$/ : /(?:#{ splt_reg.join("|") })/
@@ -76,7 +76,7 @@ def get_setlist(text_original, song_db, select_thres = 0.5)
   setlist = tmp_setlist.each{|line| line[:body] =  splitted2songinfo(line[:splitted], indices, song_db) }
   return setlist, text_original, splitters
 rescue StandardError => ex
-  puts "FAILED while parsing:","---", text_original
+  puts "FAILED while parsing", ex.message, "---", text_original
   #pp tmp_setlist
   raise Types::SetlistParseError.new(nil, tmp_setlist, text_original, ex)
 end
