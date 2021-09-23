@@ -241,7 +241,7 @@ def channel2setlists(youtube, channel_url, song_db, singing_streams:nil, title_m
         (not !title_match.nil? or title.match(title_match)) and # not nil? -> match
         (not !id_match.nil?    or id.match(id_match))          )
     }[range]
-  puts "SELECTED:", "---", uploads.map{|line| "#{line[csv_format[:title]]} (#{line[csv_format[:id]]})" }.join("\n")
+  puts "SELECTED:", "---", uploads.map{|line| "#{line[csv_format[:title]]} (#{line[csv_format[:id]]})" }.join("\n"), "---"
 
   # make setlists
   streams_dir = data_dir / channel_id / YTU::STREAMS_DIR
