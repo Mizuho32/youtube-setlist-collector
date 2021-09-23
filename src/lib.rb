@@ -13,12 +13,16 @@ load "src/types.rb" # FIXME
 #load "src/youtube_utils.rb"
 
 
+def item2snippet(item)
+  return item.snippet.top_level_comment.snippet
+end
+
 def item2text_orig(item)
   return item.snippet.top_level_comment.snippet.text_original
 end
 
 def preprocess(text_original)
-  NKF::nkf("-wZ0", text_original.gsub(/\R/, "\n"))
+  NKF::nkf("-wZ0", text_original.gsub(/\r/, ""))
 end
 
 $setlist_reg = /(?:set|songs?|セッ?ト|曲).*(?:list|リ(スト)?)/i
@@ -31,7 +35,7 @@ $line_reg = /[^\n]+#{$time_reg}[^\n]+(?:\n(?!(?:.+#{$time_reg}.+|(?:#{$symbol_re
 $list_reg = /(?:#{$line_reg}(?:\n){0,2}){2,}/ # TODO: auto detect num of LF
 
 $line_ignore_reg = /start|スタート/i
-$ignore_reg = /(?:^\s*\d+\.?|　)/
+$ignore_reg = /(?:^\s*\d+(?:\.|\s)|　)/
 
 def get_setlist(text_original, song_db, select_thres = 0.5)
   m = if $setlist_reg =~ text_original then
@@ -47,12 +51,8 @@ def get_setlist(text_original, song_db, select_thres = 0.5)
     .select{|el| not el.match($line_ignore_reg) }
     .map{|el|
       time = el.scan($time_reg)
-      m = el.sub($time_reg, "")
-        .sub($ignore_reg, "")
-        .strip # 1st row is only time stamp
-        #.tap{|el| p el}
-        .match(/^(.*)$/)
-      body =  m[1]
+      m = el.sub($ignore_reg, "").split($time_reg) # split by timestamp
+      body = m.first.size > m.last.size ? m.first : m.last
       { time: time,
         lines: lines=body.split("\n").map{|line| line.strip}
       }
