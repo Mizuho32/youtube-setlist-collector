@@ -20,7 +20,7 @@ module YTU
   MAX_RESULTS = 50
 
   def url2channel_id(url)
-    url[%r|youtube\.com/c(?:hannel)?/(?<id>[^/]+)|, :id]
+    url[%r|youtube\.com/channel/(?<id>[^/]+)|, :id]
   end
 
   def init_project(youtube, channel_url, data_dir: Pathname(DATA_DIR))
