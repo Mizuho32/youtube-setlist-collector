@@ -11,9 +11,12 @@ parser.on('-i', "--init", "Initialize project") { option[:init] = true }
 parser.on('-U', "--update", "Update uploaded videos") { option[:update] = true }
 parser.on('-m', "--make", "Make setlist") { option[:make] = true }
   parser.on('-d songs.csv', "--song-db", "CSV file name of list of song names and artists") {|v| option[:song_db] = v }
-  parser.on('-s Regexp', "--singing-stream", "Additional regexp to select singing streams") {|v| option[:singing_streams] = v }
-  parser.on('-t Regexp', "--title-match", "Title regexp to select videos from singing streams") {|v| option[:title_match] = v }
-  parser.on('-i Regexp', "--id-match", "ID regexp to select videos from singing streams") {|v| option[:id_match] = v }
+  parser.on('-s Regexp', "--singing-stream", "Additional regexp to select singing streams") {|v|
+    option[:singing_streams] = Regexp.new(v) }
+  parser.on('-t Regexp', "--title-match", "Title regexp to select videos from singing streams") {|v|
+    option[:title_match] = Regexp.new(v) }
+  parser.on('-i Regexp', "--id-match", "ID regexp to select videos from singing streams") {|v|
+    option[:id_match] = Regexp.new(v) }
   parser.on('-r range', "--range", "Select videos from singing streams by Ruby's range expr") {|v|
 		option[:range] = Range.new(*v.split("..").map(&:to_i)) }
   parser.on('-f', "--force", "Overwrite existing setlist info") {|v| option[:force] = true }
@@ -45,6 +48,11 @@ youtube.key = option[:api_key]
 if option.keys.include? :init then
   init_project(youtube, option[:url])
 elsif option.keys.include?(:make) then
+  if option[:song_db].to_s.empty? then
+    STDERR.puts("-d songs.csv: Specify CSV file name of list of song names and artists")
+    exit 4
+  end
+
 	require_relative "src/lib"
 	song_db = get_song_db(option[:song_db])
 
