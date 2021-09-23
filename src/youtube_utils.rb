@@ -20,6 +20,7 @@ module YTU
   MAX_RESULTS = 50
 
   def url2channel_id(url)
+    return url if url =~ /^[^\/]+$/ # id?
     url[%r|youtube\.com/channel/(?<id>[^/]+)|, :id]
   end
 
@@ -29,14 +30,14 @@ module YTU
     channels_csv = CSV.read(data_dir / CHANNELS_CSV) rescue []
     channel_id = url2channel_id(channel_url)
 
-    if not (hit=channels_csv.select{|(title, chid)| chid == channel_id}).empty? then
-      STDERR.puts "WARN: Channel #{channel_url} already exists!"
-    end
-
     channels = youtube.list_channels("snippet,contentDetails", id: channel_id)
-    if channels.items.empty? then
+    if channels.items.nil? or channels.items.empty? then
       STDERR.puts "Invalid channel #{channel_url}"
       return 2
+    end
+
+    if not (hit=channels_csv.select{|(title, chid)| chid == channel_id}).empty? then
+      STDERR.puts "WARN: Channel #{channel_url} already exists!"
     end
 
     channel = channels.items.first
@@ -44,9 +45,8 @@ module YTU
     channels_csv << [channel_title, channel_id]
 
     CSV.open(data_dir / CHANNELS_CSV, "wb") do |csv|
-      channels_csv.each{|row| csv << row }
-    end if not File.exist?(data_dir / CHANNELS_CSV)
-
+      channels_csv.uniq.each{|row| csv << row }
+    end
 
     channel_dir = data_dir / channel_id
     FileUtils.mkdir(channel_dir) if not Dir.exist?(channel_dir)
