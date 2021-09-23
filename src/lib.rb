@@ -179,8 +179,14 @@ def splitted2songinfo(splitted, indices, song_db)
 end
 
 
-
-
+def get_song_db(csv_location)
+return CSV.read(csv_location)[1..]
+    .inject({song_name: [], artist:[]}){|h, row|
+        h[:song_name] << row.first.downcase
+        h[:artist] << row.last.downcase
+        h
+    }
+end
 
 def looks_comment_setlist?(text_original)
   text_original.match($setlist_reg) or text_original.match($list_reg)
