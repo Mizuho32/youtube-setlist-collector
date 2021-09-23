@@ -4,6 +4,7 @@
 *.ipynb
 *.json
 /jupyter/
+*.txt
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/ruby,jupyternotebooks
