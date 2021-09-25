@@ -109,7 +109,7 @@ def get_split_symbols(tmp_setlist, select_thres)
   symbol_group_stat.select{|k,n| n/lines.size > select_thres}.keys
 end
 
-def indices_of_songinfo(song_db, tmp_setlist, sample_rate: 0.5, max_sample: 50)
+def indices_of_songinfo(song_db, tmp_setlist, sample_rate: 0.7, max_sample: 50)
   len = (tmp_setlist.size*sample_rate).to_i
   len = [tmp_setlist.size, max_sample].min if len > max_sample
 
@@ -118,7 +118,7 @@ def indices_of_songinfo(song_db, tmp_setlist, sample_rate: 0.5, max_sample: 50)
     el[:splitted].each_with_index do |info, i|
       %i[song_name artist].each{|info_type|
         db = song_db[info_type]
-        idx = db.index(info.downcase)
+        idx = db.index(info.strip.downcase)
         h[info_type] = (h[info_type] or []) << i if not idx.nil?
         #h[:splitted] = el[:splitted]
       }
