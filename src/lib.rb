@@ -2,14 +2,17 @@
 
 require 'csv'
 require 'pp'
+require 'yaml'
 
 require 'nkf'
 require 'moji'
 
-require_relative "youtube_utils"
+require_relative "params"
 require_relative "types"
+require_relative "sheet"
+require_relative "youtube_utils"
 
-load "src/types.rb" # FIXME
+#load "src/types.rb" # FIXME
 #load "src/youtube_utils.rb"
 
 
@@ -277,6 +280,45 @@ def channel2setlists(youtube, channel_url, song_db, singing_streams:nil, title_m
   CSV.open(channel_dir / YTU::FAILS_CSV, "wb") do |csv|
     fails.each{|row| csv << row }
   end
+end
 
 
+def insert_videos_to_sheet(sheet,
+  # video select params
+  channel_id, singing_streams:nil, title_match:nil, id_match:nil, range:0..-1,
+  # sheet style params
+  previous_setlist_even: 0) # 0 is true
+
+  singing_streams = singing_streams.nil? ? $singing_streams : /#{singing_streams}|#{$singing_streams}/
+  channel_dir = YTU::DATA_DIR / channel_id
+  csv_format = YTU::UPLOADS_CSV_FORMAT
+
+  selected = CSV.read(channel_dir / YTU::UPLOADS_CSV)
+      .select{|line|
+        title = line[csv_format[:title]]
+        id = line[csv_format[:id]]
+        title.match(singing_streams) and (
+          (not !title_match.nil? or title.match(title_match)) and # not nil? -> match
+          (not !id_match.nil?    or id.match(id_match))          )
+      }[range]
+
+  puts "SELECTED:", "---", selected.map{|line| "#{line[csv_format[:title]]} (#{line[csv_format[:id]]})" }.join("\n"), "---"
+
+  sc = sheet_conf = YAML.load_file(channel_dir / Params::Sheet::SHEET_CONF)
+  %i[tbc tfc rbc].each{|key| sheet_conf[key] = sheet_conf[key].map{|color| SheetsUtil.htmlcolor(color)} }
+  streams_dir = channel_dir / Params::YouTube::STREAMS_DIR
+
+  selected.reverse.each_with_index{|row, i|
+    yaml = streams_dir / (row[csv_format[:id]] + ".yaml")
+    if not File.exist?(yaml) then
+      puts "Skip #{row.join(" ")}"
+      next
+    end
+
+    video = YAML.load_file(yaml)
+    SheetsUtil.insert_video!(sheet, sc[:sheet_id], sc[:gid], sc[:start_row], sc[:start_column], video, i,
+                     row_idx_offset: previous_setlist_even+video[:setlist].size%2, # FIXME
+                     title_back_colors: sc[:tbc], title_fore_colors: sc[:tfc], row_back_colors: sc[:rbc])
+    previous_setlist_even = video[:setlist].size % 2
+  }
 end
