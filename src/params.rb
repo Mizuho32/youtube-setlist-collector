@@ -1,5 +1,6 @@
 
 module Params
+  DATA_DIR = Pathname("data")
   module YouTube
     # YouTube
     CHANNELS_CSV = "channels.csv"
@@ -9,7 +10,7 @@ module Params
     UPLOADS_CSV_FORMAT = %i[title id status].each_with_index.map{|e,i| [e, i]}.to_h
     FAILS_CSV = "fails.csv"
 
-    DATA_DIR = Pathname("data")
+    DATA_DIR = Params::DATA_DIR
     CACHE_DIR = "cache"
     STREAMS_DIR = "singing_streams"
     COMMENT_CACHE_DIR = Pathname(CACHE_DIR) / "comment"
@@ -17,6 +18,11 @@ module Params
     MAX_RESULTS = 50
   end
 
+  module Sheet
+    SHEET_CONF = "sheet.yaml"
+  end
+
   module Drive
   end
+
 end
