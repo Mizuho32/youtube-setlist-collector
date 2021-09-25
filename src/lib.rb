@@ -116,7 +116,8 @@ def indices_of_songinfo(song_db, tmp_setlist, sample_rate: 0.5, max_sample: 50)
   # search indices in song_db
   info_indices = tmp_setlist[0...len].inject({}){|h, el|
     el[:splitted].each_with_index do |info, i|
-      song_db.each{|info_type, db|
+      %i[song_name artist].each{|info_type|
+        db = song_db[info_type]
         idx = db.index(info.downcase)
         h[info_type] = (h[info_type] or []) << i if not idx.nil?
         #h[:splitted] = el[:splitted]
@@ -136,6 +137,7 @@ def indices_of_songinfo(song_db, tmp_setlist, sample_rate: 0.5, max_sample: 50)
   }.to_h
 end
 
+# FIXME song_name, artist search using song_db should improved
 def splitted2songinfo(splitted, indices, song_db)
   song_name_idx = indices[:song_name]&.first || splitted.size
   artist_idx    = indices[:artist]&.first || splitted.size
@@ -148,7 +150,7 @@ def splitted2songinfo(splitted, indices, song_db)
       if _splitted.size==1
         song_name = _splitted.first
       else
-        if not (searched = _splitted.select{|itm| song_db[:song_name].index(itm)}).empty?
+        if not (searched = _splitted.select{|itm| song_db[:song_name].index(itm.downcase)}).empty?
           song_name = searched.first
         else
           song_name = _splitted.first
@@ -171,8 +173,8 @@ def splitted2songinfo(splitted, indices, song_db)
         splitted.first
       end
     else
-      if idx = song_db[:song_name].index(song_name) then
-        artist = song_db[:artist][idx]
+      if idx = song_db[:song_name].index(song_name.downcase) then
+        artist = song_db[:ARTIST][idx]
       end
     end
   end
@@ -184,9 +186,11 @@ end
 
 def get_song_db(csv_location)
 return CSV.read(csv_location)[1..]
-    .inject({song_name: [], artist:[]}){|h, row|
+    .inject({song_name: [], artist:[], SONG_NAME: [], ARTIST:[]}){|h, row|
         h[:song_name] << row.first.downcase
         h[:artist] << row.last.downcase
+        h[:SONG_NAME] << row.first # FIXME
+        h[:ARTIST] << row.last
         h
     }
 end
