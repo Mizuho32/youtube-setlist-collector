@@ -94,7 +94,7 @@ module SheetsUtil
     request!(sheet, sheet_id, requests)
   end
 
-  def insert_video!(sheet, sheet_id, gid, row_index, column_index, video, index,
+  def insert_video!(sheet, sheet_id, gid, row_index, column_index, video, tindex, row_idx_offset: 0,
                     title_back_colors: [htmlcolor("ffffff"), htmlcolor("000000")], title_fore_colors: [htmlcolor("ffffff"), htmlcolor("000000")],
                     row_back_colors: [htmlcolor("ffffff")])
     setlist = video[:setlist]
@@ -109,13 +109,15 @@ module SheetsUtil
     # video title
     url = %Q{=HYPERLINK("https://www.youtube.com/watch?v=#{id}","#{video[:title]}")}
     cells = cellsmat2cells([[
-      formatted_cell(url, foreground_color: title_fore_colors[index%title_fore_colors.size], background_color: title_back_colors[index%title_back_colors.size],
+      formatted_cell(url, foreground_color: title_fore_colors[tindex%title_fore_colors.size], background_color: title_back_colors[tindex%title_back_colors.size],
                           horizontal_alignment: "CENTER", vertical_alignment: "MIDDLE",
                           wrap_strategy: "WRAP", font_size: 11, bold: true) ]*2])
     update_cells!(sheet, sheet_id, gid, row_index, column_index, cells)
 
     # setlist
     cells = cellsmat2cells(setlist.each_with_index.map{|el, i|
+      i+= row_idx_offset
+
       timesec = timestamp2int(el[:time].first) # FIXME
       name, artist = el[:body][:song_name].to_s, el[:body][:artist].to_s
       url = %Q{=HYPERLINK("https://www.youtube.com/watch?v=#{id}&t=#{timesec}","#{name}")}
