@@ -4,27 +4,18 @@ require 'yaml'
 
 require 'google/apis/youtube_v3'
 
+require_relative "params"
+
 module YTU
   extend self
-  CHANNELS_CSV = "channels.csv"
-  CHANNEL_INFO_YAML = "info.yaml"
-  UPLOADS_CSV = "uploads.csv" # title, id, status
-  UPLOADS_CSV_FORMAT = %i[title id status].each_with_index.map{|e,i| [e, i]}.to_h
-  FAILS_CSV = "fails.csv"
-
-  DATA_DIR = "data"
-  CACHE_DIR = "cache"
-  STREAMS_DIR = "singing_streams"
-  COMMENT_CACHE_DIR = Pathname(CACHE_DIR) / "comment"
-
-  MAX_RESULTS = 50
+  include Params::YouTube
 
   def url2channel_id(url)
     return url if url =~ /^[^\/]+$/ # id?
     url[%r|youtube\.com/channel/(?<id>[^/]+)|, :id]
   end
 
-  def init_project(youtube, channel_url, data_dir: Pathname(DATA_DIR))
+  def init_project(youtube, channel_url, data_dir: DATA_DIR)
     FileUtils.mkdir(data_dir) if not Dir.exist?(data_dir)
 
     channels_csv = CSV.read(data_dir / CHANNELS_CSV) rescue []
@@ -58,7 +49,7 @@ module YTU
     get_uploads(youtube, channel_id, channel: channel)
   end
 
-  def get_uploads(youtube, channel_id, data_dir: Pathname(DATA_DIR), channel: nil)
+  def get_uploads(youtube, channel_id, data_dir: DATA_DIR, channel: nil)
     channel_dir = data_dir / channel_id
     channel = YAML.load_file(channel_dir / CHANNEL_INFO_YAML) if channel.nil?
 
