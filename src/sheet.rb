@@ -118,7 +118,7 @@ module SheetsUtil
     cells = cellsmat2cells(setlist.each_with_index.map{|el, i|
       i+= row_idx_offset
 
-      timesec = timestamp2int(el[:time].first) # FIXME
+      timesec = timestamp2int(el[:time])
       name, artist = el[:body][:song_name].to_s, el[:body][:artist].to_s
       url = %Q{=HYPERLINK("https://www.youtube.com/watch?v=#{id}&t=#{timesec}","#{name}")}
 
