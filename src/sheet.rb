@@ -5,10 +5,6 @@ require 'yaml'
 require 'google/apis/sheets_v4'
 
 
-def send_request(sheet, sheet_id, request_body)
- sheet.batch_update_spreadsheet(sheet_id, request_body)
-end
-
 module SheetsUtil
   extend self
   S = Google::Apis::SheetsV4
