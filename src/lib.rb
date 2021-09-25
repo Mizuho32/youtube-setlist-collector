@@ -34,7 +34,7 @@ $symbol_reg = /[#{Regexp.escape($symbol)}]|#{Moji.regexp(Moji::ZEN_SYMBOL)}/
 
 $time_reg = /(?:\d+:)+\d+/
 # line that has timestamp in first row, no time stamp nor symbol only line follows
-$line_reg = /[^\n]+#{$time_reg}[^\n]+(?:\n(?!(?:.+#{$time_reg}.+|(?:#{$symbol_reg}|[^\n])+))[^\n]+)*/
+$line_reg = /[^\n]+#{$time_reg}[^\n]+(?:\n(?!(?:.+#{$time_reg}.+|(?:#{$symbol_reg})+))[^\n]+)*/
 $list_reg = /(?:#{$line_reg}(?:\n){0,2}){2,}/ # TODO: auto detect num of LF
 
 $line_ignore_reg = /start|スタート/i
