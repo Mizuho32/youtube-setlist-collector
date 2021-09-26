@@ -42,10 +42,10 @@ $ignore_reg = /(?:^\s*\d+(?:\.|\s)|　)/
 
 def get_setlist(text_original, song_db, select_thres = 0.5)
   m = if $setlist_reg =~ text_original then
-    text_original.split($setlist_reg).last
+    text_original.split($setlist_reg).map{|e| e.match($list_reg)}.compact.first
   else
-    text_original
-  end.match($list_reg)
+    text_original.match($list_reg)
+  end
 
   return [], text_original, [] if m.nil?
 
@@ -290,8 +290,9 @@ end
 def insert_videos_to_sheet(sheet,
   # video select params
   channel_id, singing_streams:nil, title_match:nil, id_match:nil, range:0..-1,
-  # sheet style params
-  previous_setlist_even: 0) # 0 is true
+  # sheet style params, 0 is true
+  previous_setlist_even: 0,
+  sleep_interval: 0.5)
 
   singing_streams = singing_streams.nil? ? $singing_streams : /#{singing_streams}|#{$singing_streams}/
   channel_dir = YTU::DATA_DIR / channel_id
@@ -306,13 +307,27 @@ def insert_videos_to_sheet(sheet,
           (not !id_match.nil?    or id.match(id_match))          )
       }[range]
 
-  puts "SELECTED:", "---", selected.map{|line| "#{line[csv_format[:title]]} (#{line[csv_format[:id]]})" }.join("\n"), "---"
+  puts "SELECTED:", "---", selected.each_with_index.map{|line, i| "#{i}. #{line[csv_format[:title]]} (#{line[csv_format[:id]]})" }.join("\n"), "---"
 
   sc = sheet_conf = YAML.load_file(channel_dir / Params::Sheet::SHEET_CONF)
   %i[tbc tfc rbc].each{|key| sheet_conf[key] = sheet_conf[key].map{|color| SheetsUtil.htmlcolor(color)} }
   streams_dir = channel_dir / Params::YouTube::STREAMS_DIR
 
+  req_per_loop = 4
+  req_limit = 60 # / min
+
+  start_time = Time.now
+  req_count = 0
   selected.reverse.each_with_index{|row, i|
+    if req_count + req_per_loop > req_limit then
+      puts("Sleeping...")
+      sleep( [60-(Time.now - start_time) + 5, 0].max )
+      start_time = Time.now
+      req_count = 0
+    end
+    req_count += req_per_loop
+
+
     yaml = streams_dir / (row[csv_format[:id]] + ".yaml")
     if not File.exist?(yaml) then
       puts "Skip #{row.join(" ")}"
@@ -320,9 +335,16 @@ def insert_videos_to_sheet(sheet,
     end
 
     video = YAML.load_file(yaml)
+  begin
     SheetsUtil.insert_video!(sheet, sc[:sheet_id], sc[:gid], sc[:start_row], sc[:start_column], video, i,
                      row_idx_offset: previous_setlist_even+video[:setlist].size%2, # FIXME
                      title_back_colors: sc[:tbc], title_fore_colors: sc[:tfc], row_back_colors: sc[:rbc])
     previous_setlist_even = video[:setlist].size % 2
+    sleep sleep_interval
+  rescue Google::Apis::RateLimitError => ex
+    puts ex.message
+    puts "Processing: #{row.join(", ")}"
+    return
+  end
   }
 end
