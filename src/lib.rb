@@ -65,7 +65,7 @@ def get_setlist(text_original, song_db, select_thres = 0.5)
     .select{|el| not el.match($line_ignore_reg) }
     .map{|el|
       time = el.scan($time_reg).first # FIXME?
-      m = el.sub($ignore_reg, "").split($time_reg) # split by timestamp
+      m = el.sub($ignore_reg, "").split($time_reg).map(&:strip) # split by timestamp
       return [], text_original, [] if m.empty?
 
       body = m.first.size > m.last.size ? m.first : m.last
