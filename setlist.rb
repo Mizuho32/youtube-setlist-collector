@@ -24,6 +24,8 @@ parser.on("--search query", "Search channel by query") {|v| option[:search] =  v
 
 parser.on('-k KEY', "--api-key", "YouTube API Key file or value") {|v| option[:api_key] = v }
 parser.on('-u URL', "--url", "YouTube channel url") {|v| option[:url] = v }
+parser.on('--show', "Show text_original of comments") {|v| option[:show_text_original] = true }
+parser.on('--fcc', "--force-cache-comment", "Force update comment cache") {|v| option[:force_cache_comment] = true }
 
 begin
   parser.parse!(ARGV)
@@ -57,7 +59,7 @@ elsif option.keys.include?(:make) then
 	require_relative "src/lib"
 	song_db = get_song_db(option[:song_db])
 
-	keys = %i[singing_streams title_match id_match range force]
+	keys = %i[singing_streams title_match id_match range force show_text_original force_cache_comment]
 	kw = option.select{|k,v| keys.include?(k) }
   channel2setlists(youtube, option[:url], song_db, **kw)
 elsif option.keys.include?(:update) then
