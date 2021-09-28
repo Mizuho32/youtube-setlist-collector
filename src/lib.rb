@@ -34,17 +34,28 @@ $symbol_reg = /[#{Regexp.escape($symbol)}]|#{Moji.regexp(Moji::ZEN_SYMBOL)}/
 
 $time_reg = /(?:\d+:)+\d+/
 # line that has timestamp in first row, no time stamp nor symbol only line follows
-$line_reg = /[^\n]+#{$time_reg}[^\n]+(?:\n(?!(?:.+#{$time_reg}.+|(?:#{$symbol_reg})+))[^\n]+)*/
-$list_reg = /(?:#{$line_reg}(?:\n){0,2}){2,}/ # TODO: auto detect num of LF
+$line_reg = /[^\n]*#{$time_reg}[^\n]+(?:\n(?!(?:.+#{$time_reg}.+|(?:#{$symbol_reg})+))[^\n]+)*/
+def list_reg_gen(lfnum)
+  /(?:#{$line_reg}(?:\n){0,#{lfnum}}){2,}/ # TODO: auto detect num of LF
+end
+$list_reg = list_reg_gen(2)
 
 $line_ignore_reg = /start|スタート/i
 $ignore_reg = /(?:^\s*\d+(?:\.|\s)|　)/
 
+class Array
+  def mean()
+    self.sum/self.size.to_f
+  end
+end
+
 def get_setlist(text_original, song_db, select_thres = 0.5)
+  lfnum = text_original.scan(/\n+/).map{|lfs| lfs.size}.mean.to_i
+  list_reg = list_reg_gen(lfnum)
   m = if $setlist_reg =~ text_original then
-    text_original.split($setlist_reg).map{|e| e.match($list_reg)}.compact.first
+    text_original.split($setlist_reg).map{|e| e.match(list_reg)}.compact.first
   else
-    text_original.match($list_reg)
+    text_original.match(list_reg)
   end
 
   return [], text_original, [] if m.nil?
@@ -55,6 +66,8 @@ def get_setlist(text_original, song_db, select_thres = 0.5)
     .map{|el|
       time = el.scan($time_reg).first # FIXME?
       m = el.sub($ignore_reg, "").split($time_reg) # split by timestamp
+      return [], text_original, [] if m.empty?
+
       body = m.first.size > m.last.size ? m.first : m.last
       { time: time,
         lines: lines=body.split("\n").map{|line| line.strip}
@@ -199,24 +212,28 @@ def looks_comment_setlist?(text_original)
   text_original.match($setlist_reg) or text_original.match($list_reg)
 end
 
-def video2looks_setlists(youtube, videoId: "", maxResults: 20, response: nil)
-  response = youtube.list_comment_threads('snippet', video_id: videoId.to_s, max_results: maxResults) if response.nil?
+def video2looks_setlists(youtube, videoId: "", maxResults: 20, response: nil, show: false, force_cache: false)
+  response = youtube.list_comment_threads('snippet', video_id: videoId.to_s, max_results: maxResults, order: "relevance") if response.nil? or force_cache
 
   lsl = response.items.map{|el|
     [el, preprocess( item2text_orig(el) )]
   }.select{|el, text_original|
-    looks_comment_setlist?(text_original)
+    looks = looks_comment_setlist?(text_original)
+    if show then
+      puts "-----", text_original, "match list_reg: #{!! looks}"
+    end
+    looks
   }.sort{|(lel,ltext_original), (rel,rtext_original)|
     lel.snippet.top_level_comment.snippet.like_count <=> rel.snippet.top_level_comment.snippet.like_count
   }.reverse
   return lsl, response
 end
 
-def video2setlist(youtube, song_db, videoId: "", maxResults: 20, response: nil)
-  looks_str_setlists, response = video2looks_setlists(youtube, videoId: videoId, maxResults: maxResults, response: response)
+def video2setlist(youtube, song_db, videoId: "", maxResults: 20, response: nil, show: false, force_cache: false)
+  looks_str_setlists, response = video2looks_setlists(youtube, videoId: videoId, maxResults: maxResults, response: response, show: show, force_cache: force_cache)
 
   set_list, txt, splitters = [], "", []
-  looks_str_setlists.each{|el, text_original|
+  looks_str_setlists.each{|el, text_original| # comment object, text
   begin
     txt = text_original
     set_list, text_original, splitters = get_setlist(text_original, song_db)
@@ -231,9 +248,9 @@ def video2setlist(youtube, song_db, videoId: "", maxResults: 20, response: nil)
   return set_list, txt, splitters, response
 end
 
-$singing_streams = /歌枠|singing\s+stream/i
-def channel2setlists(youtube, channel_url, song_db, singing_streams:nil, title_match:nil, id_match:nil, range:0..-1, force: false)
-  singing_streams = singing_streams.nil? ? $singing_streams : /#{singing_streams}|#{$singing_streams}/
+$singing_streams = /(?:歌枠|singing\s+stream)/i
+def channel2setlists(youtube, channel_url, song_db, singing_streams:nil, title_match:nil, id_match:nil, range:0..-1, force: false, show_text_original: false, force_cache_comment: false)
+  singing_streams = singing_streams.nil? ? $singing_streams : /#{singing_streams}|(?:#{$singing_streams})/
   channel_id = YTU.url2channel_id(channel_url)
   data_dir = Pathname(YTU::DATA_DIR)
   channel_dir = data_dir / channel_id
@@ -254,20 +271,24 @@ def channel2setlists(youtube, channel_url, song_db, singing_streams:nil, title_m
   streams_dir = data_dir / channel_id / YTU::STREAMS_DIR
   fails = uploads.map{|line|
   begin
+    # If setlist yaml exists, return
     id = line[csv_format[:id]]
     title = line[csv_format[:title]]
     yamlfile_name = streams_dir / "#{id}.yaml"
     next if File.exist?(yamlfile_name) and not force
 
+    # Load comment cache
     comment_cache = channel_dir / YTU::COMMENT_CACHE_DIR / "#{id}.yaml"
     cache = File.exist?(comment_cache) ? YAML.load_file(comment_cache) : {}
     response = cache[:response]
 
+    # video id to setlist
     puts "Analyze #{title}(#{id})..."
-    set_list, text, splitters, response = video2setlist(youtube, song_db, videoId: id, response: response)
+    set_list, text, splitters, response = video2setlist(youtube, song_db, videoId: id, response: response, show: show_text_original, force_cache: force_cache_comment)
     yaml = {title: title, id: id, splitters: splitters, setlist: set_list, text_original: text}.to_yaml
     File.write(yamlfile_name, yaml) if not File.exist?(yamlfile_name) or force
 
+    # Error handling
   rescue Types::SetlistParseError => ex
     File.write(comment_cache, {errmsg: ex.ex.message+"\n"+ex.ex.backtrace.join("\n"), response: ex.response, tmp_setlist: ex.tmp_setlist, text_original: ex.text_original}.to_yaml)
     next [title, id, ex.class.to_s]
@@ -277,7 +298,7 @@ def channel2setlists(youtube, channel_url, song_db, singing_streams:nil, title_m
     File.write(comment_cache, {errmsg: msg, response: ex.response, text_original: ex.text_original}.to_yaml)
     next [title, id, ex.class.to_s]
   end
-    File.write(comment_cache, {response: response}.to_yaml) if not File.exist?(comment_cache)
+    File.write(comment_cache, {response: response}.to_yaml) if(not File.exist?(comment_cache) or force_cache_comment)
     nil
   }.compact
 
