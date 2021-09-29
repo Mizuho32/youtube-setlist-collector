@@ -77,10 +77,10 @@ def get_setlist(text_original, song_db, select_thres = 0.5)
   # find splitter and split body by splitter
   splitters = get_split_symbols(tmp_setlist, select_thres)
   splt_reg = splitters.map{|e|
-    next "(?:(?<![a-z])#{e}|#{e}(?![a-z]))" if e =~ /^\s+$/
+    next "(?:(?<![a-z0-9])#{e}|#{e}(?![a-z0-9]))" if e =~ /^\s+$/
     Regexp.escape(e)
   }
-  splt_reg = splitters.empty? ? /$/ : /(?:#{ splt_reg.join("|") })/
+  splt_reg = splitters.empty? ? /$/ : /(?:#{ splt_reg.join("|") })/i
   tmp_setlist.select!{|el| el[:lines].first.match(splt_reg) }
   tmp_setlist.each{|el|
     el[:splitted] = el[:lines]
