@@ -415,7 +415,7 @@ def init_sheet(drive, sheet, channel_id, templ_sheet_id, view_dir_id)
 
     # start_row-1 is header location. and to void destroyed by inserting a new setlist
     SheetsUtil.add_banding!(sheet, sheet_id, sc[:gid], sc[:start_row]-1, sc[:start_column]+1, 2,
-                            sc[:rbc][0], sc[:rbc][1])
+                            sc[:header_color], sc[:rbc][0], sc[:rbc][1])
 
     puts "Sheet ID is #{sheet_id}, url is #{sheet_url}"
     row << sheet_id

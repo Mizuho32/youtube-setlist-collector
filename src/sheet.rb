@@ -123,12 +123,13 @@ module SheetsUtil
     request!(sheet, sheet_id, requests)
   end
 
-  def add_banding!(sheet, sheet_id, gid, row_index, column_index, horizontal_size, first_color, second_color, banded_range_id: 0)
+  def add_banding!(sheet, sheet_id, gid, row_index, column_index, horizontal_size, header_color, first_color, second_color, banded_range_id: 0)
     range = S::GridRange.new(sheet_id: gid, start_row_index: row_index, start_column_index: column_index, end_column_index: column_index+horizontal_size)
+    hcolor = color(*htmlcolor(header_color || "#ffffff"))
     fcolor = color(*htmlcolor(first_color))
     scolor = color(*htmlcolor(second_color))
-                                     # header as first
-    bprop = S::BandingProperties.new(header_color: fcolor, first_band_color: scolor, second_band_color: fcolor)
+
+    bprop = S::BandingProperties.new(header_color: hcolor, first_band_color: fcolor, second_band_color: scolor)
     requests = [add_banding: S::AddBandingRequest.new(banded_range: S::BandedRange.new(banded_range_id: banded_range_id, range: range, row_properties: bprop))]
     request!(sheet, sheet_id, requests)
   end
