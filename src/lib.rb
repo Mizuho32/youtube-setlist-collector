@@ -11,10 +11,13 @@ require_relative "params"
 require_relative "types"
 require_relative "sheet"
 require_relative "youtube_utils"
+require_relative "drive"
 
 #load "src/types.rb" # FIXME
 #load "src/youtube_utils.rb"
 
+PY = Params::YouTube
+CE = Google::Apis::ClientError
 
 def item2snippet(item)
   return item.snippet.top_level_comment.snippet
@@ -199,6 +202,7 @@ end
 
 def get_song_db(csv_location)
 return CSV.read(csv_location)[1..]
+    .reject{|el| el.compact.empty? }
     .inject({song_name: [], artist:[], SONG_NAME: [], ARTIST:[]}){|h, row|
         h[:song_name] << row.first.downcase
         h[:artist] << row.last.downcase
@@ -368,4 +372,55 @@ def insert_videos_to_sheet(sheet,
     return
   end
   }
+end
+
+def init_sheet(drive, sheet, channel_id, templ_sheet_id, view_dir_id)
+    p PY::DATA_DIR / PY::CHANNELS_CSV
+    begin
+      channels_csv = CSV.read(PY::DATA_DIR / PY::CHANNELS_CSV)
+    rescue
+      puts "Init project first"
+      return
+    end
+
+    if (row = channels_csv.select{|row| row[PY::CHANNELS_CSV_FORMAT[:id]] == channel_id}.first).nil? then
+      puts "Not found #{channel_id}"
+      return
+    end
+
+    name, channel_id, sheet_id = row
+    puts "Found #{name} (#{channel_id})"
+
+    if not sheet_id.nil? then
+      puts "Sheet #{sheet_id} already exists"
+      return
+    end
+
+    # Sheet conf load
+    channel_dir = PY::DATA_DIR / channel_id
+    if not File.exist?(channel_dir / Params::Sheet::SHEET_CONF) then
+      puts "No sheet.yaml config file"
+      return
+    end
+    sc = sheet_conf = YAML.load_file(channel_dir / Params::Sheet::SHEET_CONF)
+
+    copied = DriveUtil.copy_file(drive, templ_sheet_id, name, view_dir_id)
+    sc[:sheet_id] = sheet_id = copied.id
+
+    f = DriveUtil.make_shared(drive, sheet_id)
+    sheet_url = f.web_view_link
+
+    SheetsUtil.add_banding!(sheet, sheet_id, sc[:gid], sc[:start_row], sc[:start_column]+1, 2,
+                            sc[:rbc][0], sc[:rbc][1])
+
+    puts "Sheet ID is #{sheet_id}, url is #{sheet_url}"
+    row << sheet_id
+    row << sheet_url
+
+    # Save conf
+    CSV.open(PY::DATA_DIR / PY::CHANNELS_CSV, "wb") do |csv|
+      channels_csv.uniq.each{|r| csv << r }
+    end
+
+    File.write(channel_dir / Params::Sheet::SHEET_CONF, sc.to_yaml)
 end
