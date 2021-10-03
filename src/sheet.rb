@@ -9,6 +9,22 @@ module SheetsUtil
   extend self
   S = Google::Apis::SheetsV4
 
+  def get_sheet(json_path)
+    sheet = Google::Apis::SheetsV4::SheetsService.new
+    authorizer = Google::Auth::ServiceAccountCredentials.make_creds(
+      json_key_io: File.open(json_path),
+      scope: %w(
+        https://www.googleapis.com/auth/drive
+        https://www.googleapis.com/auth/drive.file
+        https://www.googleapis.com/auth/spreadsheets
+      )
+    )
+    authorizer.fetch_access_token!
+    sheet.authorization = authorizer
+
+    return sheet
+  end
+
   def request!(sheet, sheet_id, requests)
     request_body = Google::Apis::SheetsV4::BatchUpdateSpreadsheetRequest.new(requests: requests)
     sheet.batch_update_spreadsheet(sheet_id, request_body)
@@ -91,6 +107,16 @@ module SheetsUtil
       fields: "user_entered_value,user_entered_format",
       start: S::GridCoordinate.new(sheet_id: gid, row_index: row_index, column_index: column_index),
       rows: cells)]
+    request!(sheet, sheet_id, requests)
+  end
+
+  def add_banding!(sheet, sheet_id, gid, row_index, column_index, horizontal_size, first_color, second_color, banded_range_id: 0)
+    range = S::GridRange.new(sheet_id: gid, start_row_index: row_index, start_column_index: column_index, end_column_index: column_index+horizontal_size)
+    fcolor = color(*htmlcolor(first_color))
+    scolor = color(*htmlcolor(second_color))
+                                     # header as first
+    bprop = S::BandingProperties.new(header_color: fcolor, first_band_color: scolor, second_band_color: fcolor)
+    requests = [add_banding: S::AddBandingRequest.new(banded_range: S::BandedRange.new(banded_range_id: banded_range_id, range: range, row_properties: bprop))]
     request!(sheet, sheet_id, requests)
   end
 
