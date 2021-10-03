@@ -198,6 +198,13 @@ def splitted2songinfo(splitted, indices, song_db)
     end
   end
 
+  if artist.object_id == song_name.object_id then
+    if song_name_idx < artist_idx then
+      song_name, artist = splitted.first, splitted.last
+    else
+      song_name, artist = splitted.last, splitted.first
+    end
+  end
 
   return {song_name: song_name.to_s.strip, artist: artist.to_s.strip}
 end
