@@ -31,6 +31,8 @@ def preprocess(text_original)
   NKF::nkf("-wZ0", text_original.gsub(/\r/, ""))
 end
 
+$japanese_regex = /(?:\p{Hiragana}|\p{Katakana}|[ー－]|[一-龠々])/
+
 $setlist_reg = /(?:set|songs?|セッ?ト|曲).*(?:list|リ(スト)?)/i
 $symbol = %Q<!@#$%^&*()_+-=[]{};':"\\,|.<>/?〜>
 $symbol_reg = /[#{Regexp.escape($symbol)}]|#{Moji.regexp(Moji::ZEN_SYMBOL)}/
@@ -78,9 +80,10 @@ def get_setlist(text_original, song_db, select_thres = 0.5)
     }
 
   # find splitter and split body by splitter
+  j = $japanese_regex
   splitters = get_split_symbols(tmp_setlist, select_thres)
   splt_reg = splitters.map{|e|
-    next "(?:(?<![a-z0-9])#{e}|#{e}(?![a-z0-9]))" if e =~ /^\s+$/
+    next "(?:(?<![a-z0-9,.]|#{j.to_s})#{e}|#{e}(?![a-z0-9]|#{j.to_s}))" if e =~ /^\s+$/
     Regexp.escape(e)
   }
   splt_reg = splitters.empty? ? /$/ : /(?:#{ splt_reg.join("|") })/i
