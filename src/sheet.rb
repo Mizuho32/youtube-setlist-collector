@@ -134,7 +134,7 @@ module SheetsUtil
     request!(sheet, sheet_id, requests)
   end
 
-  def insert_video!(sheet, sheet_id, gid, row_index, column_index, video, tindex, row_idx_offset: 0,
+  def insert_video!(sheet, sheet_id, gid, row_index, column_index, video, tindex,
                     title_back_colors: [htmlcolor("ffffff"), htmlcolor("000000")], title_fore_colors: [htmlcolor("ffffff"), htmlcolor("000000")])
     setlist = video[:setlist]
     length = setlist.size

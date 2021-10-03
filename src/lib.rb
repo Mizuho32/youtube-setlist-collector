@@ -317,9 +317,7 @@ end
 
 def insert_videos_to_sheet(sheet,
   # video select params
-  channel_id, singing_streams:nil, title_match:nil, id_match:nil, range:0..-1,
-  # sheet style params, 0 is true
-  previous_setlist_even: 0,
+  channel_id, singing_streams:nil, title_match:nil, id_match:nil, range:0..-1, tindex: 0,
   sleep_interval: 0.5)
 
   singing_streams = singing_streams.nil? ? $singing_streams : /#{singing_streams}|#{$singing_streams}/
@@ -364,10 +362,8 @@ def insert_videos_to_sheet(sheet,
 
     video = YAML.load_file(yaml)
   begin
-    SheetsUtil.insert_video!(sheet, sc[:sheet_id], sc[:gid], sc[:start_row], sc[:start_column], video, i,
-                     row_idx_offset: previous_setlist_even+video[:setlist].size%2, # FIXME
-                     title_back_colors: sc[:tbc], title_fore_colors: sc[:tfc], row_back_colors: sc[:rbc])
-    previous_setlist_even = video[:setlist].size % 2
+    SheetsUtil.insert_video!(sheet, sc[:sheet_id], sc[:gid], sc[:start_row], sc[:start_column], video, tindex+i,
+                     title_back_colors: sc[:tbc], title_fore_colors: sc[:tfc])
     sleep sleep_interval
   rescue Google::Apis::RateLimitError => ex
     puts ex.message
