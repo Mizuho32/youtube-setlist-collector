@@ -49,6 +49,16 @@ module SheetsUtil
     request!(sheet, sheet_id, requests)
   end
 
+  def reject_recur(hash, &block)
+    hash.reject!{|k,v|
+      if v.is_a?(Hash) then
+        reject_recur(v, &block)
+      end
+      next true if block.call(k, v)
+      false
+    }
+  end
+
 =begin
 	values = [{
 		user_entered_format: {text_format: {font_size: 11, bold: true, foreground_color: {red:0, green:0, blue:0 }} },
@@ -91,11 +101,14 @@ module SheetsUtil
     end
 
     align = {vertical_alignment: vertical_alignment, horizontal_alignment: horizontal_alignment, wrap_strategy: wrap_strategy}.select{|k,v| v}
-    { user_entered_value:  S::ExtendedValue.new("#{value_type}_value": value),
+    data = { user_entered_value:  S::ExtendedValue.new("#{value_type}_value": value),
       user_entered_format: S::CellFormat.new(
-        text_format: S::TextFormat.new(font_size: font_size, bold: bold, foreground_color: color(*foreground_color)),
-        background_color: color(*background_color),
+        text_format: S::TextFormat.new(font_size: font_size, bold: bold, foreground_color: foreground_color && color(*foreground_color)),
+        background_color: background_color && color(*background_color),
         **align) }
+
+    reject_recur(data){|k, v| v.nil?}
+    return data
 	end
 
   def cellsmat2cells(cells_mat)
@@ -121,8 +134,7 @@ module SheetsUtil
   end
 
   def insert_video!(sheet, sheet_id, gid, row_index, column_index, video, tindex, row_idx_offset: 0,
-                    title_back_colors: [htmlcolor("ffffff"), htmlcolor("000000")], title_fore_colors: [htmlcolor("ffffff"), htmlcolor("000000")],
-                    row_back_colors: [htmlcolor("ffffff")])
+                    title_back_colors: [htmlcolor("ffffff"), htmlcolor("000000")], title_fore_colors: [htmlcolor("ffffff"), htmlcolor("000000")])
     setlist = video[:setlist]
     length = setlist.size
     id = video[:id]
@@ -142,15 +154,13 @@ module SheetsUtil
 
     # setlist
     cells = cellsmat2cells(setlist.each_with_index.map{|el, i|
-      i+= row_idx_offset
-
       timesec = timestamp2int(el[:time])
       name, artist = el[:body][:song_name].to_s, el[:body][:artist].to_s
       url = %Q{=HYPERLINK("https://www.youtube.com/watch?v=#{id}&t=#{timesec}","#{name}")}
 
-      namecell = formatted_cell(url, foreground_color: [0,0,0], background_color: row_back_colors[i%row_back_colors.size],
+      namecell = formatted_cell(url, foreground_color: [0,0,0], background_color: nil,
                                 wrap_strategy: "CLIP", font_size: 11, bold: true)
-      artistcell = formatted_cell(artist, foreground_color: [0,0,0], background_color: row_back_colors[i%row_back_colors.size],
+      artistcell = formatted_cell(artist, foreground_color: [0,0,0], background_color: nil,
                                   wrap_strategy: "CLIP", font_size: 11, bold: true)
       [namecell, artistcell]
     })
