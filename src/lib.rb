@@ -35,7 +35,7 @@ $japanese_regex = /(?:\p{Hiragana}|\p{Katakana}|[ー－]|[一-龠々])/
 
 $setlist_reg = /(?:set|songs?|セッ?ト|曲).*(?:list|リ(スト)?)/i
 $symbol = %Q<!@#$%^&*()_+-=[]{};':"\\,|.<>/?〜>
-$symbol_reg = /[#{Regexp.escape($symbol)}]|#{Moji.regexp(Moji::ZEN_SYMBOL)}/
+$symbol_reg = /[#{Regexp.escape($symbol)}]|#{Moji.regexp(Moji::ZEN_SYMBOL)}|　/ # FIXME? Zenkaku space is symbol?
 
 $time_reg = /(?:\d+:)+\d+/
 # line that has timestamp in first row, no time stamp nor symbol only line follows
@@ -46,7 +46,7 @@ end
 $list_reg = list_reg_gen(2)
 
 $line_ignore_reg = /start|スタート/i
-$ignore_reg = /(?:^\s*\d+(?:\.|\s)|　)/
+$ignore_reg = /^\s*\d+(?:\.|\s)/
 
 class Array
   def mean()
@@ -55,7 +55,7 @@ class Array
 end
 
 def get_setlist(text_original, song_db, select_thres = 0.5)
-  lfnum = text_original.scan(/\n+/).map{|lfs| lfs.size}.mean.to_i
+  lfnum = text_original.scan(/\n+/).map{|lfs| lfs.size}.mean.round
   list_reg = list_reg_gen(lfnum)
   m = if $setlist_reg =~ text_original then
     text_original.split($setlist_reg).map{|e| e.match(list_reg)}.compact.first
