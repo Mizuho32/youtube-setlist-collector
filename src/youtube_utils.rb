@@ -11,7 +11,14 @@ module YTU
   include Params::YouTube
 
   def url2channel_id(url)
-    return url if url =~ /^[^\/]+$/ # id?
+    if url =~ /^[^\/]+$/ then
+      csv = CSV.read(Params::DATA_DIR / CHANNELS_CSV)
+      match = csv.select{|row|
+        row[CHANNELS_CSV_FORMAT[:name]].include?(url) or row[CHANNELS_CSV_FORMAT[:id]].include?(url)
+      }
+      return match.first[CHANNELS_CSV_FORMAT[:id]] if not match.empty?
+      return url  # id?
+    end
     url[%r|youtube\.com/channel/(?<id>[^/]+)|, :id]
   end
 
