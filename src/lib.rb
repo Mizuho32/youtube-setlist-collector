@@ -90,8 +90,9 @@ def get_setlist(text_original, song_db, select_thres = 0.5)
   tmp_setlist.select!{|el| el[:lines].first.match(splt_reg) }
   tmp_setlist.each{|el|
     el[:splitted] = el[:lines]
-      .first.split(splt_reg)
-      .select{|splt| not splt.empty? and splt !~ /^(?:\s|#{$symbol_reg})+$/ }
+      .first.split(splt_reg).map(&:strip)
+      #.select{|splt| not splt.empty? and splt !~ /^(?:\s|#{$symbol_reg})+$/ }
+      # FIXME: remove symbol and space only item but not needed?
   }
   # map song_name and artist
   indices = indices_of_songinfo(song_db, tmp_setlist)
@@ -125,7 +126,7 @@ def get_split_symbols(tmp_setlist, select_thres)
       symbol_group_stat[k1] += symbol_group_stat[k2]
     end
   }
-  symbol_group_stat.select{|k,n| n/lines.size > select_thres}.keys
+  symbol_group_stat.select{|k,n| n/lines.size > select_thres}.keys.map(&:strip)
 end
 
 def indices_of_songinfo(song_db, tmp_setlist, sample_rate: 0.7, max_sample: 50)
