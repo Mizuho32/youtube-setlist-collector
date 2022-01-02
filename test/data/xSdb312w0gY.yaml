@@ -1,0 +1,205 @@
+---
+:title: "【歌枠】たくさん歌うよ～！！！！Singing ！【#苺咲べりぃ/Vtuber】 -  Singing Stream"
+:id: xSdb312w0gY
+:splitters:
+- " / "
+- " | "
+- " ("
+- ")"
+:setlist:
+- :time: '10:15'
+  :lines:
+  - 大正浪漫 / Taisho Roman | YOASOBI
+  :splitted:
+  - 大正浪漫
+  - Taisho Roman
+  - YOASOBI
+  :body:
+    :song_name: 大正浪漫
+    :artist: YOASOBI
+- :time: '14:40'
+  :lines:
+  - 群青 / Gunjou | YOASOBI
+  :splitted:
+  - 群青
+  - Gunjou
+  - YOASOBI
+  :body:
+    :song_name: 群青
+    :artist: YOASOBI
+- :time: '20:20'
+  :lines:
+  - エフェメラをあつめて / Ephemera o Atsumete | 鈴木みのり (Minori Suzuki)
+  :splitted:
+  - エフェメラをあつめて
+  - Ephemera o Atsumete
+  - 鈴木みのり
+  - Minori Suzuki
+  :body:
+    :song_name: エフェメラをあつめて
+    :artist: 鈴木みのり
+- :time: '27:10'
+  :lines:
+  - Dancing stars on me! | μ's
+  :splitted:
+  - Dancing stars on me!
+  - μ's
+  :body:
+    :song_name: Dancing stars on me!
+    :artist: μ's
+- :time: '33:40'
+  :lines:
+  - 思い出がいっぱい / Omoide ga Ippai | H2O
+  :splitted:
+  - 思い出がいっぱい
+  - Omoide ga Ippai
+  - H2O
+  :body:
+    :song_name: 思い出がいっぱい
+    :artist: H2O
+- :time: '39:00'
+  :lines:
+  - 青のじゅもん / Ao no Jumon | Kiroro
+  :splitted:
+  - 青のじゅもん
+  - Ao no Jumon
+  - Kiroro
+  :body:
+    :song_name: 青のじゅもん
+    :artist: Kiroro
+- :time: '45:55'
+  :lines:
+  - もう少し / Mou Sukoshi | Kiroro
+  :splitted:
+  - もう少し
+  - Mou Sukoshi
+  - Kiroro
+  :body:
+    :song_name: もう少し
+    :artist: Kiroro
+- :time: '52:40'
+  :lines:
+  - 金魚花火 / Kingyo Hanabi | 大塚愛 (Ai Otsuka)
+  :splitted:
+  - 金魚花火
+  - Kingyo Hanabi
+  - 大塚愛
+  - Ai Otsuka
+  :body:
+    :song_name: 金魚花火
+    :artist: 大塚愛
+- :time: '58:35'
+  :lines:
+  - Strawberry Jam | 大塚愛 (Ai Otsuka)
+  :splitted:
+  - Strawberry Jam
+  - 大塚愛
+  - Ai Otsuka
+  :body:
+    :song_name: Strawberry Jam
+    :artist: Ai Otsuka
+- :time: '1:04:45'
+  :lines:
+  - カラフル。/ Colorful. | 沢井美空 (Miku Sawai)
+  :splitted:
+  - カラフル。/ Colorful.
+  - 沢井美空
+  - Miku Sawai
+  :body:
+    :song_name: カラフル。/ Colorful.
+    :artist: Miku Sawai
+- :time: '1:10:45'
+  :lines:
+  - One Love | 嵐 (Arashi)
+  :splitted:
+  - One Love
+  - 嵐
+  - Arashi
+  :body:
+    :song_name: One Love
+    :artist: Arashi
+- :time: '1:17:10'
+  :lines:
+  - KissHug | aiko
+  :splitted:
+  - KissHug
+  - aiko
+  :body:
+    :song_name: KissHug
+    :artist: aiko
+- :time: '1:24:41'
+  :lines:
+  - 甘い気持ちまるかじり / Amai Kimochi Maru Kajiri | 大塚愛 (Ai Otsuka)
+  :splitted:
+  - 甘い気持ちまるかじり
+  - Amai Kimochi Maru Kajiri
+  - 大塚愛
+  - Ai Otsuka
+  :body:
+    :song_name: 甘い気持ちまるかじり
+    :artist: 大塚愛
+- :time: '1:32:27'
+  :lines:
+  - あなたに逢いたくて / Anata ni Aitakute ～Missing You～ | 松田聖子 (Seiko Matsuda)
+  :splitted:
+  - あなたに逢いたくて
+  - Anata ni Aitakute ～Missing You～
+  - 松田聖子
+  - Seiko Matsuda
+  :body:
+    :song_name: あなたに逢いたくて
+    :artist: 松田聖子
+- :time: '1:39:45'
+  :lines:
+  - プラネタリウム / Planetarium | 大塚愛 (Ai Otsuka)
+  :splitted:
+  - プラネタリウム
+  - Planetarium
+  - 大塚愛
+  - Ai Otsuka
+  :body:
+    :song_name: プラネタリウム
+    :artist: 大塚愛
+- :time: '1:47:08'
+  :lines:
+  - トリセツ / Torisetsu | 西野カナ (Kana Nishino)
+  :splitted:
+  - トリセツ
+  - Torisetsu
+  - 西野カナ
+  - Kana Nishino
+  :body:
+    :song_name: トリセツ
+    :artist: 西野カナ
+- :time: '1:53:25'
+  :lines:
+  - Always | 西野カナ (Kana Nishino)
+  :splitted:
+  - Always
+  - 西野カナ
+  - Kana Nishino
+  :body:
+    :song_name: Always
+    :artist: Kana Nishino
+- :time: '2:00:30'
+  :lines:
+  - ヴァンパイア / The Vampire | DECO*27
+  - おつ
+  :splitted:
+  - ヴァンパイア
+  - The Vampire
+  - DECO*27
+  :body:
+    :song_name: ヴァンパイア
+    :artist: DECO*27
+:text_original: "10:15 大正浪漫 / Taisho Roman | YOASOBI\n14:40群青 / Gunjou | YOASOBI\n20:20エフェメラをあつめて
+  / Ephemera o Atsumete | 鈴木みのり (Minori Suzuki) \n27:10 Dancing stars on me! | μ's\n33:40
+  思い出がいっぱい / Omoide ga Ippai | H2O\n39:00 青のじゅもん / Ao no Jumon | Kiroro\n45:55 もう少し
+  / Mou Sukoshi | Kiroro \n52:40 金魚花火 / Kingyo Hanabi | 大塚愛 (Ai Otsuka) \n58:35 Strawberry
+  Jam | 大塚愛 (Ai Otsuka) \n1:04:45 カラフル。/ Colorful. | 沢井美空 (Miku Sawai) \n1:10:45 One
+  Love | 嵐 (Arashi) \n1:17:10 KissHug | aiko \n1:24:41 甘い気持ちまるかじり / Amai Kimochi Maru
+  Kajiri | 大塚愛 (Ai Otsuka) \n1:32:27 あなたに逢いたくて / Anata ni Aitakute ～Missing You～ |
+  松田聖子 (Seiko Matsuda)\n1:39:45 プラネタリウム / Planetarium | 大塚愛 (Ai Otsuka)\n1:47:08 トリセツ
+  / Torisetsu | 西野カナ (Kana Nishino)\n1:53:25 Always | 西野カナ (Kana Nishino) \n2:00:30
+  ヴァンパイア / The Vampire | DECO*27\nおつ\n\nCome and Join us at Maisaki Berry Discord
+  Fan Server\n苺桜べりぃDiscordファンサーバーに参加してどうぞ ～ !\n\nhttps://discord.gg/zD5h66jB"
