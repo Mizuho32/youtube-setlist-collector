@@ -53,7 +53,7 @@ class ParseTest < Test::Unit::TestCase
       elsif splitted.size == 2 then
         song, artist = splitted
       end
-      
+
       body = splitted2songinfo(splitted, indices, SELF.song_db)
       puts "  #{body.inspect}"
 
@@ -62,10 +62,6 @@ class ParseTest < Test::Unit::TestCase
       assert_equal(artist, body[:artist])
       assert_equal(artist_en, body[:artist_en])
     }
-
-    #line = SELF.target_yaml[:setlist].first
-    #body = splitted2songinfo(line[:splitted], indices, SELF.song_db)
-    #pp body
   end
 
   #assert_nil(c.block)
