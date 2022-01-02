@@ -77,6 +77,7 @@ module YTU
     else # uploaded == cached
       puts "Local data is updated. Nothing to do"
       return
+      nil # for return void error
     end
     uploads = delta + uploads
     puts "Updated Delta (#{delta.size})","----", delta.map{|row| row.join(", ")}.join("\n"), "----"
