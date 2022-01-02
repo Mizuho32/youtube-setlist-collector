@@ -12,6 +12,7 @@ require_relative "types"
 require_relative "sheet"
 require_relative "youtube_utils"
 require_relative "drive"
+require_relative "util"
 
 #load "src/types.rb" # FIXME
 #load "src/youtube_utils.rb"
@@ -129,17 +130,18 @@ def get_split_symbols(tmp_setlist, select_thres)
   symbol_group_stat.select{|k,n| n/lines.size > select_thres}.keys.map(&:strip)
 end
 
+# ex. tmpsetlist -> {song_name: [0], artist: [1]}, indices array [0], [1] includes likelyhood indices
 def indices_of_songinfo(song_db, tmp_setlist, sample_rate: 0.7, max_sample: 50)
   len = (tmp_setlist.size*sample_rate).to_i
   len = [tmp_setlist.size, max_sample].min if len > max_sample
 
-  # search indices in song_db
+  # search column indices in song_db
   info_indices = tmp_setlist[0...len].inject({}){|h, el|
-    el[:splitted].each_with_index do |info, i|
+    el[:splitted].each_with_index do |info, i| # info: songname or artist?, i: column index
       %i[song_name artist].each{|info_type|
         db = song_db[info_type]
         idx = db.index(info.strip.downcase)
-        h[info_type] = (h[info_type] or []) << i if not idx.nil?
+        h[info_type] = (h[info_type] or []) << i if not idx.nil? # if in the db, insert column idx
         #h[:splitted] = el[:splitted]
       }
     end
@@ -164,40 +166,8 @@ def splitted2songinfo(splitted, indices, song_db)
   song_name = splitted[song_name_idx]
   artist    = splitted[artist_idx]
 
-  if song_name.nil? then
-    _splitted = splitted.reject{|n| n==artist}
-    if song_name_idx >= _splitted.size # invalid song_name index
-      if _splitted.size==1
-        song_name = _splitted.first
-      else
-        if not (searched = _splitted.select{|itm| song_db[:song_name].index(itm.downcase)}).empty?
-          song_name = searched.first
-        else
-          song_name = _splitted.first
-        end
-      end
-    else
-      song_name = if song_name_idx < artist_idx then
-        _splitted.first
-      else
-        _splitted.last
-      end
-    end
-  end
-
-  if artist.nil?
-    if splitted.size != 1
-      artist = if song_name_idx < artist_idx then
-        splitted.last
-      else
-        splitted.first
-      end
-    else
-      if idx = song_db[:song_name].index(song_name.downcase) then
-        artist = song_db[:ARTIST][idx]
-      end
-    end
-  end
+  song_name_idx, song_name = Util.estim_song_name(song_name_idx, song_name, splitted, song_db)
+  artist_idx, artist = Util.estim_artist(song_name, artist, song_name_idx, artist_idx, splitted, song_db)
 
   if artist.object_id == song_name.object_id then
     if song_name_idx < artist_idx then
@@ -207,7 +177,15 @@ def splitted2songinfo(splitted, indices, song_db)
     end
   end
 
-  return {song_name: song_name.to_s.strip, artist: artist.to_s.strip}
+  body = {song_name: song_name.to_s.strip, artist: artist.to_s.strip}
+
+  # looks multilingual?
+  if splitted.size > 2 then
+    return Util.estim_en(song_name_idx, artist_idx, splitted, body)
+  else
+    return body
+  end
+
 end
 
 
