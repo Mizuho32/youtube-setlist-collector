@@ -127,7 +127,11 @@ def get_split_symbols(tmp_setlist, select_thres)
       symbol_group_stat[k1] += symbol_group_stat[k2]
     end
   }
-  symbol_group_stat.select{|k,n| n/lines.size > select_thres}
+  symbol_group_stat
+    .select{|k,n|
+      next(true) if /\(|\)/ =~ k  # special case of paren ()
+      n/lines.size > select_thres
+    }
     .keys.map(&:strip).select{|el| not el.empty?}
 end
 
