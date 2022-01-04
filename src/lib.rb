@@ -100,7 +100,7 @@ def get_setlist(text_original, song_db, select_thres = 0.5)
   setlist = tmp_setlist.each{|line| line[:body] =  splitted2songinfo(line[:splitted], indices, song_db) }
   return setlist, text_original, splitters
 rescue StandardError => ex
-  puts "FAILED while parsing", ex.message, "---", text_original
+  puts "FAILED while parsing", ex.backtrace.join("\n"), ex.message, "---", text_original
   #pp tmp_setlist
   raise Types::SetlistParseError.new(nil, tmp_setlist, text_original, ex)
 end
@@ -127,7 +127,8 @@ def get_split_symbols(tmp_setlist, select_thres)
       symbol_group_stat[k1] += symbol_group_stat[k2]
     end
   }
-  symbol_group_stat.select{|k,n| n/lines.size > select_thres}.keys.map(&:strip)
+  symbol_group_stat.select{|k,n| n/lines.size > select_thres}
+    .keys.map(&:strip).select{|el| not el.empty?}
 end
 
 # ex. tmpsetlist -> {song_name: [0], artist: [1]}, indices array [0], [1] includes likelyhood indices
@@ -166,7 +167,7 @@ def splitted2songinfo(splitted, indices, song_db)
   song_name = splitted[song_name_idx]
   artist    = splitted[artist_idx]
 
-  song_name_idx, song_name = Util.estim_song_name(song_name_idx, song_name, splitted, song_db)
+  song_name_idx, song_name = Util.estim_song_name(song_name_idx, song_name, artist, splitted, song_db)
   artist_idx, artist = Util.estim_artist(song_name, artist, song_name_idx, artist_idx, splitted, song_db)
 
   if artist.object_id == song_name.object_id then

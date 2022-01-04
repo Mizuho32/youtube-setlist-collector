@@ -34,7 +34,7 @@ module Util
     end
   end
 
-  def estim_song_name(song_name_idx, song_name, splitted, song_db)
+  def estim_song_name(song_name_idx, song_name, artist, splitted, song_db)
     if song_name.nil? then
       _splitted = splitted.each_with_index
         .map{|el, i| [i, el]}
