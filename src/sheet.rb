@@ -136,6 +136,7 @@ module SheetsUtil
 
   def insert_video!(sheet, sheet_id, gid, row_index, column_index, video, tindex,
                     title_back_colors: [htmlcolor("ffffff"), htmlcolor("000000")], title_fore_colors: [htmlcolor("ffffff"), htmlcolor("000000")])
+
     setlist = video[:setlist]
     length = setlist.size
     id = video[:id]
@@ -156,14 +157,22 @@ module SheetsUtil
     # setlist
     cells = cellsmat2cells(setlist.each_with_index.map{|el, i|
       timesec = timestamp2int(el[:time])
-      name, artist = el[:body][:song_name].to_s, el[:body][:artist].to_s
+      # FIXME?: english only
+      name, name_en, artist, artist_en = el[:body][:song_name].to_s, el[:body][:song_name_en].to_s, el[:body][:artist].to_s, el[:body][:artist_en].to_s
+
       url = %Q{=HYPERLINK("https://www.youtube.com/watch?v=#{id}&t=#{timesec}","#{name}")}
+      name_en = %Q{=HYPERLINK("https://www.youtube.com/watch?v=#{id}&t=#{timesec}","#{name_en}")} if not name_en.empty?
 
       namecell = formatted_cell(url, foreground_color: [0,0,0], background_color: nil,
                                 wrap_strategy: "CLIP", font_size: 11, bold: true)
+      namecell_en = formatted_cell(name_en, foreground_color: [0,0,0], background_color: nil,
+                                wrap_strategy: "CLIP", font_size: 11, bold: true)
+
       artistcell = formatted_cell(artist, foreground_color: [0,0,0], background_color: nil,
                                   wrap_strategy: "CLIP", font_size: 11, bold: true)
-      [namecell, artistcell]
+      artistcell_en = formatted_cell(artist_en, foreground_color: [0,0,0], background_color: nil,
+                                  wrap_strategy: "CLIP", font_size: 11, bold: true)
+      [namecell, namecell_en, artistcell, artistcell_en]
     })
     update_cells!(sheet, sheet_id, gid, row_index, column_index+1, cells)
   end
