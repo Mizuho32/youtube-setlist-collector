@@ -309,12 +309,13 @@ end
 def insert_videos_to_sheet(sheet,
   # video select params
   channel_id, singing_streams:nil, title_match:nil, id_match:nil, range:0..-1, tindex: 0,
-  sleep_interval: 0.5)
+  sleep_interval: 0.5, select_only: false)
 
   singing_streams = singing_streams.nil? ? $singing_streams : /#{singing_streams}|#{$singing_streams}/
   channel_dir = YTU::DATA_DIR / channel_id
   csv_format = YTU::UPLOADS_CSV_FORMAT
 
+  # select videos
   selected = CSV.read(channel_dir / YTU::UPLOADS_CSV)
       .select{|line|
         title = line[csv_format[:title]]
@@ -325,6 +326,7 @@ def insert_videos_to_sheet(sheet,
       }[range]
 
   puts "SELECTED:", "---", selected.each_with_index.map{|line, i| "#{i}. #{line[csv_format[:title]]} (#{line[csv_format[:id]]})" }.join("\n"), "---"
+  return if select_only
 
   sc = sheet_conf = YAML.load_file(channel_dir / Params::Sheet::SHEET_CONF)
   %i[tbc tfc rbc].each{|key| sheet_conf[key] = sheet_conf[key].map{|color| SheetsUtil.htmlcolor(color)} }
@@ -333,6 +335,7 @@ def insert_videos_to_sheet(sheet,
   req_per_loop = 4
   req_limit = 60 # / min
 
+  # write to sheet
   start_time = Time.now
   req_count = 0
   selected.reverse.each_with_index{|row, i|
