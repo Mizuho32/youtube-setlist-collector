@@ -24,7 +24,7 @@ module Util
 
   def estim_en(song_name_idx, artist_idx, splitted, body) # FIXME: not only for EN
     pair = splitted.each_with_index
-      .reject{|el, i| i == song_name_idx or i == artist_idx or el =~ /^\s*$/}
+      .reject{|el, i| i == song_name_idx or i == artist_idx} # FIXME? in the case of song_name / | artist (artist_en)
       .map{|el, i| el}[0...2]
 
     if song_name_idx < artist_idx then
