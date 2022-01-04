@@ -120,19 +120,26 @@ def get_split_symbols(tmp_setlist, select_thres)
   end
 
   symbol_group_stat = Hash[symbol_group.map{|k,v| [k, v.size.to_f]}]
-  symbol_group_stat.keys.combination(2).each{|k1, k2|
-    if k1.include?(k2) then
-      symbol_group_stat[k2] += symbol_group_stat[k1]
+  dels = symbol_group_stat.keys.combination(2).map{|k1, k2|
+    broad, narrow = if k1.include?(k2) then
+      [k2, k1]
     elsif k2.include?(k1) then
-      symbol_group_stat[k1] += symbol_group_stat[k2]
+      [k1, k2]
+    else
+      next
     end
-  }
+
+    symbol_group_stat[narrow.gsub(broad, "")] = symbol_group_stat[narrow]
+    symbol_group_stat[broad] += symbol_group_stat[narrow]
+    narrow
+  }.uniq
+  dels.each{|k| symbol_group_stat.delete(k)}
+
   symbol_group_stat
     .select{|k,n|
       next(true) if /\(|\)/ =~ k  # special case of paren ()
       n/lines.size > select_thres
-    }
-    .keys.map(&:strip).select{|el| not el.empty?}
+    }.keys.map(&:strip).select{|el| not el.empty?}.uniq
 end
 
 # ex. tmpsetlist -> {song_name: [0], artist: [1]}, indices array [0], [1] includes likelyhood indices
