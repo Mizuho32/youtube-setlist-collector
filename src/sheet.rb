@@ -172,7 +172,11 @@ module SheetsUtil
                                   wrap_strategy: "CLIP", font_size: 11, bold: true)
       artistcell_en = formatted_cell(artist_en, foreground_color: [0,0,0], background_color: nil,
                                   wrap_strategy: "CLIP", font_size: 11, bold: true)
-      [namecell, namecell_en, artistcell, artistcell_en]
+
+      comment = formatted_cell(el[:lines][1..-1].join("\n"), foreground_color: [0,0,0], background_color: nil,
+                                  wrap_strategy: "CLIP", font_size: 11, bold: true)
+
+      [namecell, namecell_en, artistcell, artistcell_en, comment]
     })
     update_cells!(sheet, sheet_id, gid, row_index, column_index+1, cells)
   end
