@@ -186,7 +186,26 @@ module SheetsUtil
   end
 
   def htmlcolor(code, alpha=1)
-    [*code.sub(?#, "").each_char.each_slice(2).map{|c| (c.join.to_i(16)/255.0).round(2) }, alpha]
+    [*code.sub(?#, "").each_char.each_slice(2).map{|c| (c.join.to_i(16)/255.0).round(7) }, alpha]
   end
+
+  def color2hexcolor(rgb_color)
+    %w[red green blue].map{|c| "%x" % (rgb_color.send(c) * 0xFF).to_i }.join
+  end
+
+  # query: hex num, candidates: [hex num,...]
+  def nearest_color_index(query, candidates)
+    candidates.map{|color| (color-query).abs}
+      .each_with_index.min_by{|abs_val, i| abs_val}.last
+  end
+
+  #                     Hash,           Google::Apis::SheetsV4::Color
+  def next_color_index(sheet_conf, background_color)
+    query = color2hexcolor(background_color).to_i(16)
+    cand  = sheet_conf[:rbc].map{|hex_str| hex_str.sub(?#, "").to_i(16) }
+
+    return (nearest_color_index(query, cand).succ) % cand.size
+  end
+
 
 end
