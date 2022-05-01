@@ -3,13 +3,14 @@
 require 'optparse'
 
 option = {
-
+  select_only: false
 }
 
 parser = OptionParser.new
 parser.on('-i', "--init", "Initialize project") { option[:init] = true }
 parser.on('-U', "--update", "Update uploaded videos") { option[:update] = true }
 parser.on('-m', "--make", "Make setlist") { option[:make] = true }
+parser.on('-a', "--apply", "Apply update to the sheet") { option[:apply] = true }
   parser.on('-d songs.csv', "--song-db", "CSV file name of list of song names and artists") {|v| option[:song_db] = v }
   parser.on('-s Regexp', "--singing-stream", "Additional regexp to select singing streams") {|v|
     option[:singing_streams] = Regexp.new(v) }
@@ -20,6 +21,8 @@ parser.on('-m', "--make", "Make setlist") { option[:make] = true }
   parser.on('-r range', "--range", "Select videos from singing streams by Ruby's range expr") {|v|
 		option[:range] = Range.new(*v.split("..").map(&:to_i)) }
   parser.on('-f', "--force", "Overwrite existing setlist info") {|v| option[:force] = true }
+  parser.on("-j JSON", "--json", "my-project-xxxxx.json") {|v| option[:json] = v }
+  parser.on('--so', "--select-only", "select and show only for --apply") {|v| option[:select_only] = true }
 parser.on("--search query", "Search channel by query") {|v| option[:search] =  v}
 
 parser.on('-k KEY', "--api-key", "YouTube API Key file or value") {|v| option[:api_key] = v }
@@ -38,8 +41,9 @@ if option[:url].to_s.empty? and not option[:search] then
   STDERR.puts("-u URL: Specify YouTube channel's URL and API ")
   exit 2
 end
-if %i[init update make search].map{|e| not option.keys.include? e}.all? then
-  STDERR.puts("Specify one of them: --init, --update, --make")
+
+if (subcmd = %i[init update make search apply]).map{|e| not option.keys.include? e}.all? then
+  STDERR.puts("Specify one of them: #{subcmd.map{|e| "--#{e}"}.join(", ")}")
   exit 3
 end
 
@@ -50,6 +54,7 @@ youtube.key = option[:api_key]
 
 if option.keys.include? :init then
   YTU.init_project(youtube, option[:url])
+
 elsif option.keys.include?(:make) then
   if option[:song_db].to_s.empty? then
     STDERR.puts("-d songs.csv: Specify CSV file name of list of song names and artists")
@@ -57,14 +62,27 @@ elsif option.keys.include?(:make) then
   end
 
 	require_relative "src/lib"
-	song_db = get_song_db(option[:song_db])
+	require_relative "src/sheet"
 
-	keys = %i[singing_streams title_match id_match range force show_text_original force_cache_comment]
+	song_db = get_song_db(option[:song_db])
+	sheet = SheetsUtil.get_sheet(option[:json])
+
+	keys = %i[singing_streams title_match id_match range force show_text_original force_cache_comment select_only]
 	kw = option.select{|k,v| keys.include?(k) }
-  channel2setlists(youtube, option[:url], song_db, **kw)
+  channel2setlists(youtube, sheet, option[:url], song_db, **kw)
+
 elsif option.keys.include?(:update) then
 	require_relative "src/lib"
   YTU.get_uploads(youtube, YTU.url2channel_id(option[:url]))
+
+elsif option.keys.include?(:apply) then
+	require_relative "src/lib"
+	require_relative "src/sheet"
+
+	sheet = SheetsUtil.get_sheet(option[:json])
+	insert_videos_to_sheet(sheet, YTU.url2channel_id(option[:url]),
+	range: option[:range], id_match: option[:id_match], #tindex: 1,
+  select_only: option[:select_only])
 
 elsif option.keys.include?(:search) then
   query = youtube.list_searches("snippet", q: option[:search], type: "channel")
