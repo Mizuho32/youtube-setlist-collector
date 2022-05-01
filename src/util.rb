@@ -84,4 +84,51 @@ module Util
     end
   end
 
+  def channel_dir(channel_id)
+    Params::DATA_DIR / channel_id
+  end
+
+  def streams_dir(channel_id)
+    channel_dir(channel_id) / Params::YouTube::STREAMS_DIR
+  end
+
+  def sheet_conf(channel_id)
+    YAML.load_file(channel_dir(channel_id) / Params::Sheet::SHEET_CONF)
+  end
+
+  def channel_infos(channel_id)
+    channel = YAML.load_file(channel_dir(channel_id) / CHANNEL_INFO_YAML)
+    uploads = CSV.read(channel_dir / UPLOADS_CSV) rescue []
+
+    return channel, uploads
+  end
+
+
+  def load_videos(channel_id)
+    CSV.read(channel_dir(channel_id) / YTU::UPLOADS_CSV)
+  end
+
+  def filter_videos(videos, main_filter, title_match:nil, id_match:nil, range:0..-1)
+    csv_format = YTU::UPLOADS_CSV_FORMAT
+    videos.select{|line|
+        title = line[csv_format[:title]]
+        id = line[csv_format[:id]]
+        title.match(main_filter) and (
+          (not !title_match.nil? or title.match(title_match)) and # not nil? -> match
+          (not !id_match.nil?    or id.match(id_match))          )
+      }[range]
+  end
+
+  def yet_uploaded_videos?(list, last_id)
+    csv_format = YTU::UPLOADS_CSV_FORMAT
+    arg = list.map{|row| row[csv_format[:id]]}.index(last_id)
+
+    if arg.nil? then
+      return 0...0
+    else
+      return 0...arg
+    end
+  end
+
+
 end
