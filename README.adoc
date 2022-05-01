@@ -20,6 +20,7 @@ Make setlist. selecting index 0 to 2 videos from "singing streams" which are mad
 [source, bash]
 ----
 $ bundle exec ./setlist.rb --make -u "https://www.youtube.com/channel/xxxxxxxxxxxx" -k key.txt -r "0..2" -i '-R3' -d list.csv -f
+$ bundle exec ./setlist.rb --make -u "https://www.youtube.com/channel/xxxxxxxxxxxx" -k key.txt -d list.csv -j path/to/my-project-xxxxxx.json
 ----
 
 `list.csv` is song name and artist list. Order is name, artist.
@@ -34,6 +35,12 @@ Update. (init first)
 [source, bash]
 ----
 $ bundle exec ./setlist.rb --update -u "https://www.youtube.com/channel/xxxxxxxxxxxx" -k key.txt
+----
+
+Apply.
+[source, bahs]
+----
+$ bundle exec ./setlist.rb --apply -u "https://www.youtube.com/channel/xxxxxxxxxxxx" -k key.txt -j path/to/my-project-xxxxxx.json
 ----
 
 == For develop
