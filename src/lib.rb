@@ -254,23 +254,29 @@ def video2setlist(youtube, song_db, videoId: "", maxResults: 20, response: nil, 
 end
 
 $singing_streams = /(?:歌枠|singing\s+stream)/i
-def channel2setlists(youtube, channel_url, song_db, singing_streams:nil, title_match:nil, id_match:nil, range:0..-1, force: false, show_text_original: false, force_cache_comment: false)
+def channel2setlists(youtube, sheet, channel_url, song_db, singing_streams:nil, title_match:nil, id_match:nil, range:nil, force: false, show_text_original: false, force_cache_comment: false, select_only: false)
   singing_streams = singing_streams.nil? ? $singing_streams : /#{singing_streams}|(?:#{$singing_streams})/
   channel_id = YTU.url2channel_id(channel_url)
   data_dir = Pathname(YTU::DATA_DIR)
   channel_dir = data_dir / channel_id
 
-  # select singing streams
+  # load singing streams
   csv_format = YTU::UPLOADS_CSV_FORMAT
-  uploads = CSV.read(channel_dir / YTU::UPLOADS_CSV)
-    .select{|line|
-      title = line[csv_format[:title]]
-      id = line[csv_format[:id]]
-      title.match(singing_streams) and (
-        (not !title_match.nil? or title.match(title_match)) and # not nil? -> match
-        (not !id_match.nil?    or id.match(id_match))          )
-    }[range]
+  uploads = Util.filter_videos(Util.load_videos(channel_id), singing_streams, title_match: title_match, id_match: id_match, range: 0..-1)
+
+  # calc delta
+  ## get last title cell
+  sc = sheet_conf = Util.sheet_conf(channel_id)
+
+  ranges = ["SETLIST!R#{sc[:start_row].succ}C#{sc[:start_column].succ}"] #FIXME: SETLIST
+  title_cell = sheet.get_spreadsheet(sc[:sheet_id], ranges: ranges, include_grid_data: true)
+    .sheets.first.data.first.row_data.first.values.first
+  range = Util.yet_uploaded_videos?(uploads, title_cell.hyperlink[/v=([^=]+)/, 1]) if range.nil?
+  uploads = uploads[range]
+
+
   puts "SELECTED:", "---", uploads.map{|line| "#{line[csv_format[:title]]} (#{line[csv_format[:id]]})" }.join("\n"), "---"
+  return if select_only
 
   # make setlists
   streams_dir = data_dir / channel_id / YTU::STREAMS_DIR
@@ -315,29 +321,51 @@ end
 
 def insert_videos_to_sheet(sheet,
   # video select params
-  channel_id, singing_streams:nil, title_match:nil, id_match:nil, range:0..-1, tindex: 0,
+  channel_id, singing_streams:nil, title_match:nil, id_match:nil, range: nil, tindex: nil,
   sleep_interval: 0.5, select_only: false)
 
+  # get last title cell
+  sc = sheet_conf = Util.sheet_conf(channel_id)
+
+  ranges = ["SETLIST!R#{sc[:start_row].succ}C#{sc[:start_column].succ}"]
+  #FIXME: SETLIST
+  title_cell = sheet.get_spreadsheet(sc[:sheet_id], ranges: ranges, include_grid_data: true)
+    .sheets.first.data.first.row_data.first.values.first
+
+  tindex = SheetsUtil.next_color_index(sc, title_cell.effective_format.background_color) if tindex.nil?
+
   singing_streams = singing_streams.nil? ? $singing_streams : /#{singing_streams}|#{$singing_streams}/
-  channel_dir = YTU::DATA_DIR / channel_id
   csv_format = YTU::UPLOADS_CSV_FORMAT
 
-  # select videos
-  selected = CSV.read(channel_dir / YTU::UPLOADS_CSV)
-      .select{|line|
-        title = line[csv_format[:title]]
-        id = line[csv_format[:id]]
-        title.match(singing_streams) and (
-          (not !title_match.nil? or title.match(title_match)) and # not nil? -> match
-          (not !id_match.nil?    or id.match(id_match))          )
-      }[range]
+  # select singing_streams
+  selected = Util.filter_videos(Util.load_videos(channel_id), singing_streams, title_match: title_match, id_match: id_match, range: 0..-1)
 
-  puts "SELECTED:", "---", selected.each_with_index.map{|line, i| "#{i}. #{line[csv_format[:title]]} (#{line[csv_format[:id]]})" }.join("\n"), "---"
+  # compare sheet's latest and cached streams and calc delta
+  range = Util.yet_uploaded_videos?(selected, title_cell.hyperlink[/v=([^=]+)/, 1]) if range.nil?
+
+  #selected = CSV.read(channel_dir / YTU::UPLOADS_CSV)
+  #    .select{|line|
+  #      title = line[csv_format[:title]]
+  #      id = line[csv_format[:id]]
+  #      title.match(singing_streams) and (
+  #        (not !title_match.nil? or title.match(title_match)) and # not nil? -> match
+  #        (not !id_match.nil?    or id.match(id_match))          )
+  #    }[range]
+
+  puts <<-EOO
+tindex: #{tindex}
+SELECTED:
+---
+#{selected[range].each_with_index.map{|line, i| "#{i}. #{line[csv_format[:title]]} (#{line[csv_format[:id]]})" }.join("\n")}
+---
+EOO
+
   return if select_only
 
-  sc = sheet_conf = YAML.load_file(channel_dir / Params::Sheet::SHEET_CONF)
+  selected = selected[range]
+
   %i[tbc tfc rbc].each{|key| sheet_conf[key] = sheet_conf[key].map{|color| SheetsUtil.htmlcolor(color)} }
-  streams_dir = channel_dir / Params::YouTube::STREAMS_DIR
+  streams_dir = Util.streams_dir(channel_id)
 
   req_per_loop = 4
   req_limit = 60 # / min
