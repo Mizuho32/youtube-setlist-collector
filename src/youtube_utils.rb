@@ -1,10 +1,12 @@
 require 'fileutils'
 require "csv"
 require 'yaml'
+require 'date'
 
 require 'google/apis/youtube_v3'
 
 require_relative "params"
+require_relative "util"
 
 module YTU
   extend self
@@ -63,7 +65,7 @@ module YTU
     channel_stat = youtube.list_channels("statistics", id: channel_id).items.first
 
     video_count = channel_stat.statistics.video_count
-    uploads = CSV.read(channel_dir / UPLOADS_CSV) rescue []
+    uploads = Util.load_uploades(youtube, channel_id)
     playlist_id = channel.content_details.related_playlists.uploads
 
     puts "#{video_count} videos on the online, #{uploads.size} on the local"
@@ -82,9 +84,7 @@ module YTU
     uploads = delta + uploads
     puts "Updated Delta (#{delta.size})","----", delta.map{|row| row.join(", ")}.join("\n"), "----"
 
-    CSV.open(channel_dir / UPLOADS_CSV, "wb") do |csv|
-      uploads.each{|row| csv << row }
-    end
+    Util.save_uploads(channel_id, uploads)
   end
 
   def load_uploads(youtube, count, playlist_id)
@@ -94,11 +94,23 @@ module YTU
     token = nil
     loop do
       playlist = youtube.list_playlist_items("snippet,contentDetails", playlist_id: playlist_id, page_token: token, max_results: max_result)
-      uploads += playlist.items.map{|v| [v.snippet.title, v.content_details.video_id, "public"] }
+      publisheds = get_video_details(youtube, playlist.items.map{|v| v.content_details.video_id})
+        .map{|item| item.snippet.published_at.new_offset(Time.now.getlocal.zone)}
+      uploads += playlist.items.zip(publisheds).map{|v, d| [v.snippet.title, v.content_details.video_id, "public", d.iso8601] }
       token = playlist.next_page_token
       break if token.nil? or uploads.size >= count
     end
 
     return uploads
+  end
+
+  def get_video_details(youtube, ids, max_results = 10)
+    ids = [ids] if ids.is_a? String
+
+    all_items = ids.each_slice(max_results).inject([]){|items, ids_sub|
+      items += youtube.list_videos("id,snippet", id: ids_sub.join(",")).items
+      items
+    }
+    return all_items
   end
 end
