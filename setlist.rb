@@ -65,7 +65,7 @@ elsif option.keys.include?(:make) then
 	require_relative "src/sheet"
 
 	song_db = get_song_db(option[:song_db])
-	sheet = SheetsUtil.get_sheet(option[:json])
+	sheet = option[:json] and SheetsUtil.get_sheet(option[:json]) # return nil if json is nil
 
 	keys = %i[singing_streams title_match id_match range force show_text_original force_cache_comment select_only]
 	kw = option.select{|k,v| keys.include?(k) }
