@@ -3,7 +3,8 @@
 require 'optparse'
 
 option = {
-  select_only: false
+  select_only: false,
+  custom: ""
 }
 
 parser = OptionParser.new
@@ -29,6 +30,7 @@ parser.on('-k KEY', "--api-key", "YouTube API Key file or value") {|v| option[:a
 parser.on('-u URL', "--url", "YouTube channel url") {|v| option[:url] = v }
 parser.on('--show', "Show text_original of comments") {|v| option[:show_text_original] = true }
 parser.on('--fcc', "--force-cache-comment", "Force update comment cache") {|v| option[:force_cache_comment] = true }
+parser.on('-c url1,...', "--custom", "Add custom videos to db") {|v| option[:custom] = v }
 
 begin
   parser.parse!(ARGV)
@@ -65,7 +67,7 @@ elsif option.keys.include?(:make) then
 	require_relative "src/sheet"
 
 	song_db = get_song_db(option[:song_db])
-	sheet = option[:json] and SheetsUtil.get_sheet(option[:json]) # return nil if json is nil
+	sheet = option[:json] && SheetsUtil.get_sheet(option[:json]) # return nil if json is nil
 
 	keys = %i[singing_streams title_match id_match range force show_text_original force_cache_comment select_only]
 	kw = option.select{|k,v| keys.include?(k) }
@@ -73,7 +75,7 @@ elsif option.keys.include?(:make) then
 
 elsif option.keys.include?(:update) then
 	require_relative "src/lib"
-  YTU.get_uploads(youtube, YTU.url2channel_id(option[:url]))
+  YTU.get_uploads(youtube, YTU.url2channel_id(option[:url]), custom: option[:custom].split(","))
 
 elsif option.keys.include?(:apply) then
 	require_relative "src/lib"
