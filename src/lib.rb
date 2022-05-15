@@ -314,6 +314,9 @@ def channel2setlists(youtube, sheet, channel_url, song_db, singing_streams:nil, 
     puts ex.text_original
     File.write(comment_cache, {errmsg: msg, response: ex.response, text_original: ex.text_original}.to_yaml)
     next [title, id, ex.class.to_s]
+  rescue Google::Apis::ClientError => ex
+    STDERR.puts ex.message
+    next [title, id, ex.class.to_s]
   end
     File.write(comment_cache, {response: response}.to_yaml) if(not File.exist?(comment_cache) or force_cache_comment)
     nil
