@@ -7,7 +7,7 @@ module Params
     CHANNELS_CSV_FORMAT = %i[name id sheet_id, sheet_url].each_with_index.map{|e,i| [e, i]}.to_h
     CHANNEL_INFO_YAML = "info.yaml"
     UPLOADS_CSV = "uploads.csv" # title, id, status, date
-    UPLOADS_CSV_FORMAT = %i[title id status, date].each_with_index.map{|e,i| [e, i]}.to_h
+    UPLOADS_CSV_FORMAT = %i[title id status date].each_with_index.map{|e,i| [e, i]}.to_h
     FAILS_CSV = "fails.csv"
 
     DATA_DIR = Params::DATA_DIR
