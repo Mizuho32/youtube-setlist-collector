@@ -135,10 +135,14 @@ module Util
     uploads = CSV.read(channel_dir(channel_id) / YTU::UPLOADS_CSV) rescue []
     fmt = YTU::UPLOADS_CSV_FORMAT
 
+    # Date parse
+    uploads.map!{|row|
+      row[fmt[:date]] = DateTime.iso8601(row[fmt[:date]]) rescue false
+      row
+    }
     # Consistency check
     no_dates_idx = uploads.each_with_index.select{|row, i|
-      d = DateTime.iso8601(row[fmt[:date]]) rescue false
-      not d
+      not row[fmt[:date]]
     }.map{|row, i| i}
 
     ids = no_dates_idx.map{|i| uploads[i][fmt[:id]]}
