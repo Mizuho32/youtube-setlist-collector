@@ -60,28 +60,28 @@ module SheetsUtil
   end
 
 =begin
-	values = [{
-		user_entered_format: {text_format: {font_size: 11, bold: true, foreground_color: {red:0, green:0, blue:0 }} },
-		user_entered_value: { "formula_value": %Q{=HYPERLINK("https://google.com", "AOOGLE")}  },
-	}]*2
+  values = [{
+    user_entered_format: {text_format: {font_size: 11, bold: true, foreground_color: {red:0, green:0, blue:0 }} },
+    user_entered_value: { "formula_value": %Q{=HYPERLINK("https://google.com", "AOOGLE")}  },
+  }]*2
 
-	start = {sheet_id: 0, column_index: 0, row_index: 1}
-	rows = [{values: values}]*3
+  start = {sheet_id: 0, column_index: 0, row_index: 1}
+  rows = [{values: values}]*3
 
-	requests.push({
-			update_cells: {
-					fields: "*",
-					start: start,
-					rows: rows
-			}
-	})
+  requests.push({
+      update_cells: {
+          fields: "*",
+          start: start,
+          rows: rows
+      }
+  })
 =end
 
   def color(r,g,b,a=1)
     S::Color.new(red: r, green: g, blue: b, alpha: a)
   end
 
-	def	formatted_cell(value, font_size: 10, bold: false, foreground_color: [0, 0, 0], background_color: [1, 1, 1],
+  def formatted_cell(value, font_size: 10, bold: false, foreground_color: [0, 0, 0], background_color: [1, 1, 1],
                      vertical_alignment: nil, horizontal_alignment: nil,
                      # TOP,MIDDLE,BOTTOM  LEFT,CENTER,RIGHT
                      wrap_strategy: nil)
@@ -109,7 +109,7 @@ module SheetsUtil
 
     reject_recur(data){|k, v| v.nil?}
     return data
-	end
+  end
 
   def cellsmat2cells(cells_mat)
     cells_mat.map{|row| {values: row}}
