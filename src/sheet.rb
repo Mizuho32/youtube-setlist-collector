@@ -81,9 +81,21 @@ module SheetsUtil
     S::Color.new(red: r, green: g, blue: b, alpha: a)
   end
 
+  def color_style(color)
+    S::ColorStyle.new(rgb_color: color)
+  end
+
+  def if_not_nil(v, &block)
+    return v if v.nil?
+    return block.call(v)
+  end
+
   def formatted_cell(value, font_size: 10, bold: false, foreground_color: [0, 0, 0], background_color: [1, 1, 1],
                      vertical_alignment: nil, horizontal_alignment: nil,
                      # TOP,MIDDLE,BOTTOM  LEFT,CENTER,RIGHT
+                     borders: nil, # { top,bottom,leftr,right: {
+                     # style: https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets/cells#Style,
+                     # color_style: color_style(color) }}
                      wrap_strategy: nil)
                      # OVERFLOW_CELL, LEGACY_WRAP, CLIP, WRAP
     value_type =
@@ -101,9 +113,10 @@ module SheetsUtil
     end
 
     align = {vertical_alignment: vertical_alignment, horizontal_alignment: horizontal_alignment, wrap_strategy: wrap_strategy}.select{|k,v| v}
-    data = { user_entered_value:  S::ExtendedValue.new("#{value_type}_value": value),
+    data = { user_entered_value:  if_not_nil(value) {|value| S::ExtendedValue.new("#{value_type}_value": value)},
       user_entered_format: S::CellFormat.new(
         text_format: S::TextFormat.new(font_size: font_size, bold: bold, foreground_color: foreground_color && color(*foreground_color)),
+        borders: borders && S::Borders.new(**Hash[borders.map{|k,v| [k, S::Border.new(**v)] }]),
         background_color: background_color && color(*background_color),
         **align) }
 
