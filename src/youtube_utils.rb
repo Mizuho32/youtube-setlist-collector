@@ -93,9 +93,13 @@ module YTU
     uploads = []
     token = nil
     loop do
-      playlist = youtube.list_playlist_items("snippet,contentDetails", playlist_id: playlist_id, page_token: token, max_results: max_result)
-      uploads += playlist.items.map{|v| [v.snippet.title, v.content_details.video_id, "public"] }
-      token = playlist.next_page_token
+      begin
+        playlist = youtube.list_playlist_items("snippet,contentDetails", playlist_id: playlist_id, page_token: token, max_results: max_result)
+        uploads += playlist.items.map{|v| [v.snippet.title, v.content_details.video_id, "public"] }
+        token = playlist.next_page_token
+      rescue Google::Apis::ClientError
+        puts "No uploaded videos for #{playlist_id}"
+     end
       break if token.nil? or uploads.size >= count
     end
 
