@@ -322,7 +322,7 @@ end
 def insert_videos_to_sheet(sheet,
   # video select params
   channel_id, singing_streams:nil, title_match:nil, id_match:nil, range: nil, tindex: nil,
-  sleep_interval: 0.5, select_only: false)
+  sleep_interval: 0.5, select_only: false, bilingual: true)
 
   # get last title cell
   sc = sheet_conf = Util.sheet_conf(channel_id)
@@ -394,7 +394,7 @@ EOO
     video = YAML.load_file(yaml)
   begin
     SheetsUtil.insert_video!(sheet, sc[:sheet_id], sc[:gid], sc[:start_row], sc[:start_column], video, tindex+i,
-                     bilingual: ! (!sc[:bilingual].nil?) || sc[:bilingual], # bilingual config exists -> bilingual
+                     bilingual: bilingual, # bilingual config exists -> bilingual
                      title_back_colors: sc[:tbc], title_fore_colors: sc[:tfc])
     sleep sleep_interval
   rescue Google::Apis::RateLimitError => ex
