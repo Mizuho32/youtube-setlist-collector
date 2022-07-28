@@ -41,6 +41,7 @@ Apply.
 [source, bahs]
 ----
 $ bundle exec ./setlist.rb --apply -u "https://www.youtube.com/channel/xxxxxxxxxxxx" -k key.txt -j path/to/my-project-xxxxxx.json
+# my-project-xxxxxx.json: token to write google sheet
 ----
 
 == For develop
