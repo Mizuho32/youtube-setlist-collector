@@ -175,7 +175,7 @@ module SheetsUtil
       artistcell_en = formatted_cell(artist_en, foreground_color: [0,0,0], background_color: nil,
                                   wrap_strategy: "CLIP", font_size: 11, bold: true)
 
-      comment = formatted_cell(el[:lines][1..-1].join("\n"), foreground_color: [0,0,0], background_color: nil,
+      comment = formatted_cell(el[:lines][1..-1]&.join("\n").to_s, foreground_color: [0,0,0], background_color: nil,
                                   wrap_strategy: "CLIP", font_size: 11, bold: true)
 
       if bilingual then
