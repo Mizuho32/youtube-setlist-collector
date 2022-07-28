@@ -148,7 +148,8 @@ module SheetsUtil
     merge!(sheet, sheet_id, gid, row_index, column_index, length, 1)
 
     # video title
-    url = %Q{=HYPERLINK("https://www.youtube.com/watch?v=#{id}","#{video[:title]}")}
+    date = video[:published_at][/^([^T]+)T/, 1].gsub(?-,?/)
+    url = %Q{=HYPERLINK("https://www.youtube.com/watch?v=#{id}","#{video[:title]}\n#{date}")}
     cells = cellsmat2cells([[
       formatted_cell(url, foreground_color: title_fore_colors[tindex%title_fore_colors.size], background_color: title_back_colors[tindex%title_back_colors.size],
                           horizontal_alignment: "CENTER", vertical_alignment: "MIDDLE",
