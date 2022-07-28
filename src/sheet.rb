@@ -135,6 +135,7 @@ module SheetsUtil
   end
 
   def insert_video!(sheet, sheet_id, gid, row_index, column_index, video, tindex,
+                    bilingual: true,
                     title_back_colors: [htmlcolor("ffffff"), htmlcolor("000000")], title_fore_colors: [htmlcolor("ffffff"), htmlcolor("000000")])
 
     setlist = video[:setlist]
@@ -176,7 +177,11 @@ module SheetsUtil
       comment = formatted_cell(el[:lines][1..-1].join("\n"), foreground_color: [0,0,0], background_color: nil,
                                   wrap_strategy: "CLIP", font_size: 11, bold: true)
 
-      [namecell, namecell_en, artistcell, artistcell_en, comment]
+      if bilingual then
+        [namecell, namecell_en, artistcell, artistcell_en, comment]
+      else
+        [namecell, artistcell, comment]
+      end
     })
     update_cells!(sheet, sheet_id, gid, row_index, column_index+1, cells)
   end
