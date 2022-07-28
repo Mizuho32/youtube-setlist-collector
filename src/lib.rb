@@ -404,7 +404,7 @@ EOO
   begin
     SheetsUtil.insert_video!(sheet, sc[:sheet_id], sc[:gid], sc[:start_row], sc[:start_column], video, tindex+i, sc[:font_size] || 11,
                      bilingual: bilingual, # bilingual config exists -> bilingual
-                     title_back_colors: sc[:tbc], title_fore_colors: sc[:tfc])
+                     title_back_colors: sc[:tbc], title_fore_colors: sc[:tfc], row_back_colors: sc[:rbc])
     sleep sleep_interval
   rescue Google::Apis::RateLimitError => ex
     puts ex.message
