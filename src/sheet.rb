@@ -30,6 +30,7 @@ module SheetsUtil
     sheet.batch_update_spreadsheet(sheet_id, request_body)
   rescue Google::Apis::ClientError => e
       puts "ERROR", (JSON.parse(e.body)["error"] rescue e.body)
+      puts e.backtrace.select{|line| !line.include?("bundle")}.join("\n")
   end
 
   def insert!(sheet, sheet_id, gid, start_index, length, dimension: "ROWS")
