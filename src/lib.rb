@@ -328,7 +328,7 @@ def insert_videos_to_sheet(sheet,
   sc = sheet_conf = Util.sheet_conf(channel_id)
 
   ranges = ["SETLIST!R#{sc[:start_row].succ}C#{sc[:start_column].succ}"]
-  #FIXME: SETLIST
+  #FIXME: SETLIST↑ do not hardcode
   title_cell = sheet.get_spreadsheet(sc[:sheet_id], ranges: ranges, include_grid_data: true)
     .sheets.first.data.first.row_data.first.values.first
 
@@ -342,6 +342,8 @@ def insert_videos_to_sheet(sheet,
 
   # compare sheet's latest and cached streams and calc delta
   range = Util.yet_uploaded_videos?(selected, title_cell.hyperlink[/v=([^=]+)/, 1]) if range.nil?
+
+  puts "selected video is empty. specify -r '0..-1' to apply all videos" if selected[range].empty?
 
   #selected = CSV.read(channel_dir / YTU::UPLOADS_CSV)
   #    .select{|line|
