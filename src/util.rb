@@ -1,4 +1,5 @@
 require 'yaml'
+require 'date'
 
 require_relative "params"
 require_relative "youtube_utils"
@@ -129,6 +130,46 @@ module Util
       return 0...arg
     end
   end
+
+  def load_uploades(youtube, channel_id)
+    uploads = CSV.read(channel_dir(channel_id) / YTU::UPLOADS_CSV) rescue []
+    fmt = YTU::UPLOADS_CSV_FORMAT
+
+    # Date parse
+    uploads.map!{|row|
+      row[fmt[:date]] = DateTime.iso8601(row[fmt[:date]]) rescue false
+      row
+    }
+    # Consistency check
+    no_dates_idx = uploads.each_with_index.select{|row, i|
+      not row[fmt[:date]]
+    }.map{|row, i| i}
+
+    ids = no_dates_idx.map{|i| uploads[i][fmt[:id]]}
+    dates = YTU.get_video_details(youtube, ids)
+      .map{|item| item.snippet.published_at.new_offset(Time.now.getlocal.zone)}
+
+    no_dates_idx.each{|i|
+      puts "#{i}, #{uploads[i]}, #{fmt[:date]}"
+      uploads[i][fmt[:date]] = dates[i]}
+
+    # Save
+    save_uploads(channel_id, uploads) if not no_dates_idx.empty?
+
+    return uploads
+  end
+
+  def save_uploads(channel_id, uploads)
+    fmt = YTU::UPLOADS_CSV_FORMAT
+
+    CSV.open(channel_dir(channel_id) / YTU::UPLOADS_CSV, "wb") { |csv|
+      uploads.each do |row|
+        row[fmt[:date]] = row[fmt[:date]].iso8601
+        csv << row
+      end
+    }
+  end
+
 
 
 end

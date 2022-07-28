@@ -56,7 +56,7 @@ class Array
 end
 
 def get_setlist(text_original, song_db, select_thres = 0.5)
-  lfnum = text_original.scan(/\n+/).map{|lfs| lfs.size}.mean.round
+  lfnum = text_original.scan(/\n+/).map{|lfs| lfs.size}.mean.round # Line Feed
   list_reg = list_reg_gen(lfnum)
   m = if $setlist_reg =~ text_original then
     text_original.split($setlist_reg).map{|e| e.match(list_reg)}.compact.first
@@ -95,10 +95,13 @@ def get_setlist(text_original, song_db, select_thres = 0.5)
       #.select{|splt| not splt.empty? and splt !~ /^(?:\s|#{$symbol_reg})+$/ }
       # FIXME: remove symbol and space only item but not needed?
   }
+
   # map song_name and artist
   indices = indices_of_songinfo(song_db, tmp_setlist)
   setlist = tmp_setlist.each{|line| line[:body] =  splitted2songinfo(line[:splitted], indices, song_db) }
+
   return setlist, text_original, splitters
+
 rescue StandardError => ex
   puts "FAILED while parsing", ex.backtrace.join("\n"), ex.message, "---", text_original
   #pp tmp_setlist
@@ -108,8 +111,8 @@ end
 def get_split_symbols(tmp_setlist, select_thres)
   lines = tmp_setlist.map{|el| el[:lines][0]}
   symbol_group = lines
-    .map{|line| line.scan(/(?:(?!\s+[a-z])(?:\s|#{$symbol_reg})+|By)/i).uniq }
-    .flatten.group_by{|k,v| k}
+    .map{|line| line.scan(/(?:(?!\s+[a-z])(?:\s|#{$symbol_reg})+|By)/i).uniq } # 単語間のスペースを拾わない
+    .flatten.map{|s| s.strip}.group_by{|k,v| k}
 
   if symbol_group.empty? then # Zenkaku symbols
     symbol_group = lines
@@ -254,7 +257,7 @@ def video2setlist(youtube, song_db, videoId: "", maxResults: 20, response: nil, 
 end
 
 $singing_streams = /(?:歌枠|singing\s+stream)/i
-def channel2setlists(youtube, sheet, channel_url, song_db, singing_streams:nil, title_match:nil, id_match:nil, range:nil, force: false, show_text_original: false, force_cache_comment: false, select_only: false)
+def channel2setlists(youtube, sheet, channel_url, song_db, singing_streams:nil, title_match:nil, id_match:nil, range:0..-1, force: false, show_text_original: false, force_cache_comment: false, select_only: false)
   singing_streams = singing_streams.nil? ? $singing_streams : /#{singing_streams}|(?:#{$singing_streams})/
   channel_id = YTU.url2channel_id(channel_url)
   data_dir = Pathname(YTU::DATA_DIR)
@@ -264,14 +267,17 @@ def channel2setlists(youtube, sheet, channel_url, song_db, singing_streams:nil, 
   csv_format = YTU::UPLOADS_CSV_FORMAT
   uploads = Util.filter_videos(Util.load_videos(channel_id), singing_streams, title_match: title_match, id_match: id_match, range: 0..-1)
 
-  # calc delta
-  ## get last title cell
-  sc = sheet_conf = Util.sheet_conf(channel_id)
+  if not sheet.nil? then
+    # calc delta
+    ## get last title cell
+    sc = sheet_conf = Util.sheet_conf(channel_id)
 
-  ranges = ["SETLIST!R#{sc[:start_row].succ}C#{sc[:start_column].succ}"] #FIXME: SETLIST
-  title_cell = sheet.get_spreadsheet(sc[:sheet_id], ranges: ranges, include_grid_data: true)
-    .sheets.first.data.first.row_data.first.values.first
-  range = Util.yet_uploaded_videos?(uploads, title_cell.hyperlink[/v=([^=]+)/, 1]) if range.nil?
+    ranges = ["SETLIST!R#{sc[:start_row].succ}C#{sc[:start_column].succ}"] #FIXME: SETLIST
+    title_cell = sheet.get_spreadsheet(sc[:sheet_id], ranges: ranges, include_grid_data: true)
+      .sheets.first.data.first.row_data.first.values.first
+    range = Util.yet_uploaded_videos?(uploads, title_cell.hyperlink[/v=([^=]+)/, 1]) if range.nil?
+  end
+
   uploads = uploads[range]
 
 
@@ -307,6 +313,9 @@ def channel2setlists(youtube, sheet, channel_url, song_db, singing_streams:nil, 
     puts msg="Setlist comment not found for #{title}(#{id})"
     puts ex.text_original
     File.write(comment_cache, {errmsg: msg, response: ex.response, text_original: ex.text_original}.to_yaml)
+    next [title, id, ex.class.to_s]
+  rescue Google::Apis::ClientError => ex
+    STDERR.puts ex.message
     next [title, id, ex.class.to_s]
   end
     File.write(comment_cache, {response: response}.to_yaml) if(not File.exist?(comment_cache) or force_cache_comment)

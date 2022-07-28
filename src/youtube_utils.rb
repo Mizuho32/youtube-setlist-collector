@@ -1,10 +1,12 @@
 require 'fileutils'
 require "csv"
 require 'yaml'
+require 'date'
 
 require 'google/apis/youtube_v3'
 
 require_relative "params"
+require_relative "util"
 
 module YTU
   extend self
@@ -20,6 +22,13 @@ module YTU
       return url  # id?
     end
     url[%r|youtube\.com/channel/(?<id>[^/]+)|, :id]
+  end
+
+  def url2video_id(url)
+    if url =~ /^[^\/]+$/ then
+      return url  # id?
+    end
+    url[%r|youtube\.com/watch/?\?v=(?<id>[^=]+)|, :id] or url[%r|youtu\.be/(?<id>[^/]+)|, :id]
   end
 
   def init_project(youtube, channel_url, data_dir: DATA_DIR)
@@ -56,35 +65,43 @@ module YTU
     get_uploads(youtube, channel_id, channel: channel)
   end
 
-  def get_uploads(youtube, channel_id, data_dir: DATA_DIR, channel: nil)
+  def get_uploads(youtube, channel_id, data_dir: DATA_DIR, channel: nil, custom: [])
     channel_dir = data_dir / channel_id
     channel = YAML.load_file(channel_dir / CHANNEL_INFO_YAML) if channel.nil?
 
     channel_stat = youtube.list_channels("statistics", id: channel_id).items.first
 
+    fmt = YTU::UPLOADS_CSV_FORMAT
+
     video_count = channel_stat.statistics.video_count
-    uploads = CSV.read(channel_dir / UPLOADS_CSV) rescue []
+    uploads = Util.load_uploades(youtube, channel_id)
     playlist_id = channel.content_details.related_playlists.uploads
 
-    puts "#{video_count} videos on the online, #{uploads.size} on the local"
+    pub_uploads_size = uploads.select{|row| row[fmt[:status]] == "public"}.size
+
+
     delta =
     if uploads.empty? then
       load_uploads(youtube, video_count, playlist_id)
-    elsif uploads.size < video_count then
+    elsif pub_uploads_size < video_count then
       load_uploads(youtube, video_count-uploads.size, playlist_id)
-    elsif uploads.size > video_count then
-      raise NotImplementedError.new
+    elsif not custom.empty? then
+      puts custom
+      load_customs(youtube, custom)
+    elsif pub_uploads_size > video_count then
+      #raise NotImplementedError.new
+      $stderr.puts "Local is bigger than remote. DB can be inconsistent"
+      return
     else # uploaded == cached
       puts "Local data is updated. Nothing to do"
       return
       nil # for return void error
     end
-    uploads = delta + uploads
+
+    uploads = (delta + uploads).sort{|l,r| l[fmt[:date]] <=> r[fmt[:date]]}.reverse
     puts "Updated Delta (#{delta.size})","----", delta.map{|row| row.join(", ")}.join("\n"), "----"
 
-    CSV.open(channel_dir / UPLOADS_CSV, "wb") do |csv|
-      uploads.each{|row| csv << row }
-    end
+    Util.save_uploads(channel_id, uploads)
   end
 
   def load_uploads(youtube, count, playlist_id)
@@ -95,14 +112,35 @@ module YTU
     loop do
       begin
         playlist = youtube.list_playlist_items("snippet,contentDetails", playlist_id: playlist_id, page_token: token, max_results: max_result)
-        uploads += playlist.items.map{|v| [v.snippet.title, v.content_details.video_id, "public"] }
+        publisheds = get_video_details(youtube, playlist.items.map{|v| v.content_details.video_id})
+          .map{|item| item.snippet.published_at.new_offset(Time.now.getlocal.zone)}
+        uploads += playlist.items.zip(publisheds).map{|v, d| [v.snippet.title, v.content_details.video_id, "public", d] }
         token = playlist.next_page_token
       rescue Google::Apis::ClientError
         puts "No uploaded videos for #{playlist_id}"
-     end
+      end
       break if token.nil? or uploads.size >= count
     end
 
     return uploads
+  end
+
+  def load_customs(youtube, custom)
+    ids = custom.map{|url| url2video_id(url)}
+    return get_video_details(youtube, ids, part: "snippet,status")
+      .zip(ids).map{|item, id|
+        snip = item.snippet
+        [snip.title, id, item.status.privacy_status, snip.published_at.new_offset(Time.now.getlocal.zone)]
+      }
+  end
+
+  def get_video_details(youtube, ids, max_results = 10, part: "id,snippet")
+    ids = [ids] if ids.is_a? String
+
+    all_items = ids.each_slice(max_results).inject([]){|items, ids_sub|
+      items += youtube.list_videos(part, id: ids_sub.join(",")).items
+      items
+    }
+    return all_items
   end
 end
