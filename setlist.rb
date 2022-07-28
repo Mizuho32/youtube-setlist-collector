@@ -3,7 +3,7 @@
 require 'optparse'
 
 option = {
-  select_only: false
+  select_only: false, bilingual: true
 }
 
 parser = OptionParser.new
@@ -23,6 +23,7 @@ parser.on('-a', "--apply", "Apply update to the sheet") { option[:apply] = true 
   parser.on('-f', "--force", "Overwrite existing setlist info") {|v| option[:force] = true }
   parser.on("-j JSON", "--json", "my-project-xxxxx.json") {|v| option[:json] = v }
   parser.on('--so', "--select-only", "select and show only for --apply") {|v| option[:select_only] = true }
+  parser.on('--nb', "--no-bilingual", "No bilingual option for --apply") {|v| option[:bilingual] = false }
 parser.on("--search query", "Search channel by query") {|v| option[:search] =  v}
 
 parser.on('-k KEY', "--api-key", "YouTube API Key file or value") {|v| option[:api_key] = v }
@@ -81,8 +82,9 @@ elsif option.keys.include?(:apply) then
 
 	sheet = SheetsUtil.get_sheet(option[:json])
 	insert_videos_to_sheet(sheet, YTU.url2channel_id(option[:url]),
-	range: option[:range], id_match: option[:id_match], #tindex: 1,
-  select_only: option[:select_only])
+    range: option[:range], id_match: option[:id_match], #tindex: 1,
+    select_only: option[:select_only], singing_streams: option[:singing_streams],
+    bilingual: option[:bilingual])
 
 elsif option.keys.include?(:search) then
   query = youtube.list_searches("snippet", q: option[:search], type: "channel")
