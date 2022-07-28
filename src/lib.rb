@@ -402,7 +402,7 @@ EOO
 
     video = YAML.load_file(yaml)
   begin
-    SheetsUtil.insert_video!(sheet, sc[:sheet_id], sc[:gid], sc[:start_row], sc[:start_column], video, tindex+i,
+    SheetsUtil.insert_video!(sheet, sc[:sheet_id], sc[:gid], sc[:start_row], sc[:start_column], video, tindex+i, sc[:font_size] || 11,
                      bilingual: bilingual, # bilingual config exists -> bilingual
                      title_back_colors: sc[:tbc], title_fore_colors: sc[:tfc])
     sleep sleep_interval
