@@ -81,8 +81,8 @@ module SheetsUtil
     S::Color.new(red: r, green: g, blue: b, alpha: a)
   end
 
-  def color_style(color)
-    S::ColorStyle.new(rgb_color: color)
+  def color_style(*c)
+    S::ColorStyle.new(rgb_color: color(*c))
   end
 
   def if_not_nil(v, &block)
