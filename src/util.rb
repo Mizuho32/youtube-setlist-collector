@@ -170,6 +170,21 @@ module Util
     }
   end
 
+  def map_recur(hash, &block)
+    return Hash[hash.map{|k,v|
+      if v.is_a?(Hash) then
+        [k, map_recur(v, &block)]
+      else
+        mapped = block.call(k, v)
+        if mapped.is_a? Array then
+          mapped
+        else
+          [k, v]
+        end
+      end
+    }]
+  end
+
 
 
 end

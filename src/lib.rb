@@ -339,9 +339,14 @@ def insert_videos_to_sheet(sheet,
   ranges = ["SETLIST!R#{sc[:start_row].succ}C#{sc[:start_column].succ}"]
   #FIXME: SETLIST↑ do not hardcode
   title_cell = sheet.get_spreadsheet(sc[:sheet_id], ranges: ranges, include_grid_data: true)
-    .sheets.first.data.first.row_data.first.values.first
+    .sheets.first.data.first.row_data&.first&.values&.first
 
-  tindex = SheetsUtil.next_color_index(sc, title_cell.effective_format.background_color) if tindex.nil?
+  tindex =
+  if not title_cell.nil? then
+    SheetsUtil.next_color_index(sc, title_cell.effective_format.background_color) if tindex.nil?
+  else
+    0
+  end
 
   singing_streams = singing_streams.nil? ? $singing_streams : /#{singing_streams}|#{$singing_streams}/
   csv_format = YTU::UPLOADS_CSV_FORMAT
@@ -397,14 +402,22 @@ EOO
     yaml = streams_dir / (row[csv_format[:id]] + ".yaml")
     if not File.exist?(yaml) then
       puts "Skip #{row.join(" ")}"
+      tindex += 1
       next
     end
 
     video = YAML.load_file(yaml)
   begin
+    to_colostyle = Proc.new {|border| Util.map_recur(border){|k,v|
+      [k, SheetsUtil.color_style(*SheetsUtil.htmlcolor(v))] if k == :color_style }}
+
+    title_borders = sc[:tbd].map(&to_colostyle)
+    row_borders   = sc[:rbd].map(&to_colostyle)
+
     SheetsUtil.insert_video!(sheet, sc[:sheet_id], sc[:gid], sc[:start_row], sc[:start_column], video, tindex+i, sc[:font_size] || 11,
                      bilingual: bilingual, # bilingual config exists -> bilingual
-                     title_back_colors: sc[:tbc], title_fore_colors: sc[:tfc], row_back_colors: sc[:rbc])
+                     title_back_colors: sc[:tbc], title_fore_colors: sc[:tfc], row_back_colors: sc[:rbc],
+                     title_borders: title_borders, row_borders: row_borders)
     sleep sleep_interval
   rescue Google::Apis::RateLimitError => ex
     puts ex.message

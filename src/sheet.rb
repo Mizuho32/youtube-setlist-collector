@@ -151,7 +151,8 @@ module SheetsUtil
   def insert_video!(sheet, sheet_id, gid, row_index, column_index, video, tindex, font_size,
                     bilingual: true,
                     title_back_colors: [htmlcolor("ffffff"), htmlcolor("000000")], title_fore_colors: [htmlcolor("ffffff"), htmlcolor("000000")],
-                    row_back_colors: [])
+                    row_back_colors: [],
+                    title_borders: [], row_borders: [])
 
     setlist = video[:setlist]
     length = setlist.size
@@ -166,7 +167,9 @@ module SheetsUtil
     date = video[:published_at][/^([^T]+)T/, 1].gsub(?-,?/)
     url = %Q{=HYPERLINK("https://www.youtube.com/watch?v=#{id}","#{video[:title]}\n#{date}")}
     cells = cellsmat2cells([[
-      formatted_cell(url, foreground_color: title_fore_colors[tindex%title_fore_colors.size], background_color: title_back_colors[tindex%title_back_colors.size],
+      formatted_cell(url, foreground_color: title_fore_colors[tindex%title_fore_colors.size],
+                          background_color: title_back_colors[tindex%title_back_colors.size],
+                          borders: title_borders[tindex%title_borders.size],
                           horizontal_alignment: "CENTER", vertical_alignment: "MIDDLE",
                           wrap_strategy: "WRAP", font_size: font_size, bold: true) ]*2])
     update_cells!(sheet, sheet_id, gid, row_index, column_index, cells)
@@ -180,24 +183,22 @@ module SheetsUtil
 
       url = %Q{=HYPERLINK("https://www.youtube.com/watch?v=#{id}&t=#{timesec}","#{name}")}
       name_en = %Q{=HYPERLINK("https://www.youtube.com/watch?v=#{id}&t=#{timesec}","#{name_en}")} if not name_en.empty?
+      border = setlist.size-1 == i ? row_borders[tindex%row_borders.size] : nil
+      params = {foreground_color: [0,0,0], background_color: row_back_color,
+                wrap_strategy: "CLIP", font_size: font_size, bold: true, borders: border}
 
-      namecell = formatted_cell(url, foreground_color: [0,0,0], background_color: row_back_color,
-                                wrap_strategy: "CLIP", font_size: font_size, bold: true)
-      namecell_en = formatted_cell(name_en, foreground_color: [0,0,0], background_color: row_back_color,
-                                wrap_strategy: "CLIP", font_size: font_size, bold: true)
+      namecell = formatted_cell(url, **params)
+      namecell_en = formatted_cell(name_en, **params)
 
-      artistcell = formatted_cell(artist, foreground_color: [0,0,0], background_color: row_back_color,
-                                  wrap_strategy: "CLIP", font_size: font_size, bold: true)
-      artistcell_en = formatted_cell(artist_en, foreground_color: [0,0,0], background_color: row_back_color,
-                                  wrap_strategy: "CLIP", font_size: font_size, bold: true)
+      artistcell = formatted_cell(artist, **params)
+      artistcell_en = formatted_cell(artist_en, **params)
 
-      comment = formatted_cell(el[:lines][1..-1]&.join("\n").to_s, foreground_color: [0,0,0], background_color: row_back_color,
-                                  wrap_strategy: "CLIP", font_size: font_size, bold: true)
+      #comment = formatted_cell(el[:lines][1..-1]&.join("\n").to_s, foreground_color: [0,0,0], background_color: row_back_color, wrap_strategy: "CLIP", font_size: font_size, bold: true)
 
       if bilingual then
-        [namecell, namecell_en, artistcell, artistcell_en, comment]
+        [namecell, namecell_en, artistcell, artistcell_en]
       else
-        [namecell, artistcell, comment]
+        [namecell, artistcell]
       end
     })
     update_cells!(sheet, sheet_id, gid, row_index, column_index+1, cells)
