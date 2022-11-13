@@ -11,6 +11,7 @@ require_relative "util"
 module YTU
   extend self
   include Params::YouTube
+  YTV3 = Google::Apis::YoutubeV3
 
   def url2channel_id(url)
     if url =~ /^[^\/]+$/ then
@@ -67,7 +68,8 @@ module YTU
 
   def get_uploads(youtube, channel_id, data_dir: DATA_DIR, channel: nil, custom: [])
     channel_dir = data_dir / channel_id
-    channel = YAML.load_file(channel_dir / CHANNEL_INFO_YAML) if channel.nil?
+    classes = [YTV3::Channel, YTV3::ChannelContentDetails, YTV3::ChannelContentDetails::RelatedPlaylists, YTV3::ChannelSnippet, YTV3::ChannelLocalization, YTV3::ThumbnailDetails, YTV3::Thumbnail, DateTime, Time]
+    channel = YAML.load_file(channel_dir / CHANNEL_INFO_YAML, permitted_classes: classes) if channel.nil?
 
     channel_stat = youtube.list_channels("statistics", id: channel_id).items.first
 
